@@ -64,8 +64,6 @@ To try out the demos without installing anything locally, you can run the demos
 in your browser (even on your phone) via a cloud Colaboratory backend. Click a
 demo link below, and follow the instructions in the notebook.
 
-----------------
-
 #### [Run "shortest path demo" in browser](https://colab.research.google.com/github/deepmind/graph_nets/blob/master/demos/shortest_path.ipynb)
 
 The "shortest path demo" creates random graphs, and trains a graph network to
@@ -75,8 +73,6 @@ model refines its prediction of the shortest path.
 
 ![Shortest path](images/shortest-path.png)
 
-----------------
-
 #### [Run "sort demo" in browser](https://colab.research.google.com/github/deepmind/graph_nets/blob/master/demos/sort.ipynb)
 
 The "sort demo" creates lists of random numbers, and trains a graph network to
@@ -85,8 +81,6 @@ accurate prediction of which elements (columns in the figure) come next after
 each other (rows).
 
 ![Sort](images/sort.png)
-
-----------------
 
 #### [Run "physics demo" in browser](https://colab.research.google.com/github/deepmind/graph_nets/blob/master/demos/physics.ipynb)
 
@@ -98,8 +92,6 @@ system states over 50 steps. This is similar to the model and experiments in
 Battaglia et al. (2016)'s "interaction networks".
 
 ![Physics](images/physics.png)
-
-----------------
 
 ### Run the demos on your local machine
 
