@@ -66,7 +66,7 @@ demo link below, and follow the instructions in the notebook.
 
 ----------------
 
-#### [Run "shortest path demo" in browser](https://colab.research.google.com/github/deepmind/graph_nets/blob/master/demos/shortest_path.ipynb)
+#### [Run "shortest path demo" in browser](https://colab.research.google.com/github/deepmind/graph_nets/blob/master/graph_nets/demos/shortest_path.ipynb)
 
 The "shortest path demo" creates random graphs, and trains a graph network to
 label the nodes and edges on the shortest path between any two nodes. Over a
@@ -77,7 +77,7 @@ model refines its prediction of the shortest path.
 
 ----------------
 
-#### [Run "sort demo" in browser](https://colab.research.google.com/github/deepmind/graph_nets/blob/master/demos/sort.ipynb)
+#### [Run "sort demo" in browser](https://colab.research.google.com/github/deepmind/graph_nets/blob/master/graph_nets/demos/sort.ipynb)
 
 The "sort demo" creates lists of random numbers, and trains a graph network to
 sort the list. After a sequence of message-passing steps, the model makes an
@@ -88,7 +88,7 @@ each other (rows).
 
 ----------------
 
-#### [Run "physics demo" in browser](https://colab.research.google.com/github/deepmind/graph_nets/blob/master/demos/physics.ipynb)
+#### [Run "physics demo" in browser](https://colab.research.google.com/github/deepmind/graph_nets/blob/master/graph_nets/demos/physics.ipynb)
 
 The "physics demo" creates random mass-spring physical systems, and trains a
 graph network to predict the state of the system on the next timestep. The
