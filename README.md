@@ -1,3 +1,5 @@
+![Graph Nets DeepMind shortest path](images/graph-nets-deepmind-shortest-path0.gif)
+
 # Graph Nets library
 
 [Graph Nets](https://github.com/deepmind/graph_nets) is DeepMind's library for
