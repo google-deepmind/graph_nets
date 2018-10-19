@@ -43,7 +43,6 @@ setup(
         "numpy",
         "setuptools",
         "six",
-        "tensorflow",
     ],
     classifiers=[
         "Development Status :: 4 - Beta",
