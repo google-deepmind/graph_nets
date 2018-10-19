@@ -44,6 +44,7 @@ setup(
         "setuptools",
         "six",
         "tensorflow",
+        "tensorflow-probability",
     ],
     classifiers=[
         "Development Status :: 4 - Beta",
