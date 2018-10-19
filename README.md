@@ -25,10 +25,18 @@ The Graph Nets library can be installed from pip.
 
 This installation is compatible with Linux/Mac OS X, and Python 2.7 and 3.4+.
 
-To install the library, run:
+The library will work with both the CPU and GPU version of TensorFlow, but to allow for that it does not list Tensorflow as a requirement, so you need to install Tensorflow separately if you haven't already done so.
+
+To install the Graph Nets library for CPU, run:
 
 ```shell
-$ pip install graph_nets
+$ pip install graph_nets tensorflow tensorflow_probability
+```
+
+To install the Graph Nets library for GPU, run:
+
+```shell
+$ pip install graph_nets tensorflow_gpu tensorflow_probability_gpu
 ```
 
 ## Usage example
