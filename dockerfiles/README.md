@@ -64,6 +64,40 @@ docker run --runtime=nvidia -u $(id -u):$(id -g) -p 8888:8888 -it imburbank/grap
 docker run --runtime=nvidia --user $(id -u):$(id -g) -p 8888:8888 -v $(pwd):/my-devel -it imburbank/graph_nets:latest-gpu
 ```
 
+## Run Demos Using A Docker Image
+
+Run a demo image from Docker Hub.
+
+```bash
+# Run demos using CPU
+docker run -u $(id -u):$(id -g) -p 8888:8888 -it imburbank/graph_nets:latest-demos
+
+# Run demos using GPU
+docker run --runtime=nvidia -u $(id -u):$(id -g) -p 8888:8888 -it imburbank/graph_nets:latest-gpu-demos
+```
+
+It will take some time to download and build the images locally the first time. Subsequent runs will re-use the intermediate images to start quickly.
+
+The container will serve the demos using Jupyter when complete.
+
+![Jupyter Console Message](../images/graph-nets-console-jupyter-message.png)
+
+*Keep in mind that `127.0.0.1` is the loopback IP address also known as `localhost`. So, `127.0.0.1:8888` and `localhost:8888` are equivalent addresses.*
+
+Enter the address Jupyter is serving to into your browser. If you copy-paste, be sure to delete the right parenthesis between the host the port.
+
+![Entering Jupyter Address](../images/graph-nets-jupyter-serving-url.png)
+
+You should be immediately redirected to the Jupyter Home page serving the demos folder.
+
+![Jupyter Home](../images/graph-nets-jupyter-demo-home.png)
+
+Run a demo of your choice.
+
+Ex: Physics
+
+![Physics Demo Screenshot](../images/graph-nets-physics-demo.png)
+
 ## Extended Use
 
 ### Keep `demos/` Directory After Container Quits
