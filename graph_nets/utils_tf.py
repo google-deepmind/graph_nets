@@ -253,7 +253,7 @@ def get_feed_dict(placeholders, graph):
     if placeholder is None or feed_value is None:
       if not (placeholder is None and feed_value is None):
         raise ValueError("Field {} should be `None` in either none or both of "
-                         "the placeholders and feed values.")
+                         "the placeholders and feed values.".format(field))
     else:
       feed_dict[placeholder] = feed_value
   return feed_dict
