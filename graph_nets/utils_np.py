@@ -111,11 +111,11 @@ def networkx_to_data_dict(graph_nx,
 
   The networkx graph should be set up such that, for fixed shapes `node_shape`,
    `edge_shape` and `global_shape`:
-    - `graph_nx.nodes(data=True)[i][-1]["features"]` is, for any node index i, a
+    - `graph_nx.nodes(data=True)[i]["features"]` is, for any node index i, a
       tensor of shape `node_shape`, or `None`;
-    - `graph_nx.edges(data=True)[i][-1]["features"]` is, for any edge index i, a
+    - `graph_nx.edges(data=True)[i]["features"]` is, for any edge index i, a
       tensor of shape `edge_shape`, or `None`;
-    - `graph_nx.edges(data=True)[i][-1]["index"]`, if present, defines the order
+    - `graph_nx.edges(data=True)[i]["index"]`, if present, defines the order
       in which the edges will be sorted in the resulting `data_dict`;
     - `graph_nx.graph["features"] is a tensor of shape `global_shape`, or
       `None`.
