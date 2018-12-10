@@ -524,13 +524,15 @@ def repeat(tensor, repeats, axis=0, name="repeat"):
     The `tf.Tensor` with repeated values.
   """
   with tf.name_scope(name):
-    cumsum = tf.cumsum(repeats)
+    cumsum = tf.cumsum(tf.cast(repeats, tf.float64))
     range_ = tf.range(cumsum[-1])
 
     indicator_matrix = tf.cast(tf.expand_dims(range_, 1) >= cumsum, tf.int32)
     indices = tf.reduce_sum(indicator_matrix, reduction_indices=1)
 
     shifted_tensor = _axis_to_inside(tensor, axis)
+    if shifted_tensor.dtype == tf.int32:
+      shifted_tensor = tf.cast(shifted_tensor, tf.int64)
     repeated_shifted_tensor = tf.gather(shifted_tensor, indices)
     repeated_tensor = _inside_to_axis(repeated_shifted_tensor, axis)
 
