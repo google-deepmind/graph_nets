@@ -36,7 +36,7 @@ $ pip install graph_nets tensorflow tensorflow_probability
 To install the Graph Nets library for GPU, run:
 
 ```shell
-$ pip install graph_nets tensorflow_gpu tensorflow_probability_gpu
+$ pip install graph_nets tensorflow_gpu tensorflow_probability
 ```
 
 ## Usage example
