@@ -72,7 +72,6 @@ import tensorflow as tf
 
 NODES = graphs.NODES
 EDGES = graphs.EDGES
-GLOBALS = graphs.GLOBALS
 RECEIVERS = graphs.RECEIVERS
 SENDERS = graphs.SENDERS
 GLOBALS = graphs.GLOBALS
@@ -194,7 +193,7 @@ def _build_placeholders_from_specs(dtypes,
   return graphs.GraphsTuple(**dct)
 
 
-def _placeholders_from_graphs_tuple(graph, force_dynamic_num_graphs=False):
+def _placeholders_from_graphs_tuple(graph, force_dynamic_num_graphs=True):
   """Creates a `graphs.GraphsTuple` of placeholders that matches a numpy graph.
 
   Args:
@@ -260,7 +259,7 @@ def get_feed_dict(placeholders, graph):
 
 
 def placeholders_from_data_dicts(data_dicts,
-                                 force_dynamic_num_graphs=False,
+                                 force_dynamic_num_graphs=True,
                                  name="placeholders_from_data_dicts"):
   """Constructs placeholders compatible with a list of data dicts.
 
@@ -953,6 +952,29 @@ def data_dicts_to_graphs_tuple(data_dicts, name="data_dicts_to_graphs_tuple"):
     return graphs.GraphsTuple(**_concatenate_data_dicts(data_dicts))
 
 
+def _check_valid_index(index, element_name):
+  """Verifies if a value with `element_name` is a valid index."""
+  if isinstance(index, int):
+    return True
+  elif isinstance(index, tf.Tensor):
+    if index.dtype != tf.int32 and index.dtype != tf.int64:
+      raise TypeError(
+          "Invalid tensor `{}` parameter. Valid tensor indices must have "
+          "types tf.int32 or tf.int64, got {}."
+          .format(element_name, index.dtype))
+    if index.shape.as_list():
+      raise TypeError(
+          "Invalid tensor `{}` parameter. Valid tensor indices must be scalars "
+          "with shape [], got{}"
+          .format(element_name, index.shape.as_list()))
+    return True
+  else:
+    raise TypeError(
+        "Invalid `{}` parameter. Valid tensor indices must be integers "
+        "or tensors, got {}."
+        .format(element_name, type(index)))
+
+
 def get_graph(input_graphs, index, name="get_graph"):
   """Indexes into a graph.
 
@@ -963,8 +985,9 @@ def get_graph(input_graphs, index, name="get_graph"):
 
   Args:
     input_graphs: A `graphs.GraphsTuple` containing `Tensor`s.
-    index: An `int` or a `slice`, to index into `graph`. `index` should be
-      compatible with the number of graphs in `graphs`.
+    index: An `int`, a `slice`, a tensor `int` or a tensor `slice`, to index
+      into `graph`. `index` should be compatible with the number of graphs in
+      `graphs`. The `step` parameter of the `slice` objects must be None.
     name: (string, optional) A name for the operation.
 
   Returns:
@@ -972,7 +995,9 @@ def get_graph(input_graphs, index, name="get_graph"):
       graph(s).
 
   Raises:
-    TypeError: if `index` is not an `int` or a `slice`.
+    TypeError: if `index` is not an `int`, a `slice`, or corresponding tensor
+      types.
+    ValueError: if `index` is a slice and `index.step` if not None.
   """
 
   def safe_slice_none(value, slice_):
@@ -980,12 +1005,22 @@ def get_graph(input_graphs, index, name="get_graph"):
       return value
     return value[slice_]
 
-  if isinstance(index, int):
+  if isinstance(index, (int, tf.Tensor)):
+    _check_valid_index(index, "index")
     graph_slice = slice(index, index + 1)
-  elif isinstance(index, slice):
+  elif (isinstance(index, slice) and
+        _check_valid_index(index.stop, "index.stop") and
+        (index.start is None or _check_valid_index(
+            index.start, "index.start"))):
+    if index.step is not None:
+      raise ValueError("slices with step/stride are not supported, got {}"
+                       .format(index))
     graph_slice = index
   else:
-    raise TypeError("unsupported type: %s" % type(index))
+    raise TypeError(
+        "unsupported index type got {} with type {}. Index must be a valid "
+        "scalar integer (tensor or int) or a slice of such values."
+        .format(index, type(index)))
 
   start_slice = slice(0, graph_slice.start)
 

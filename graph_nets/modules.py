@@ -202,7 +202,7 @@ class RelationNetwork(snt.AbstractModule):
 
 def _make_default_edge_block_opt(edge_block_opt):
   """Default options to be used in the EdgeBlock of a generic GraphNetwork."""
-  edge_block_opt = edge_block_opt or {}
+  edge_block_opt = dict(edge_block_opt.items()) if edge_block_opt else {}
   for k, v in _DEFAULT_EDGE_BLOCK_OPT.items():
     edge_block_opt[k] = edge_block_opt.get(k, v)
   return edge_block_opt
@@ -210,7 +210,7 @@ def _make_default_edge_block_opt(edge_block_opt):
 
 def _make_default_node_block_opt(node_block_opt, default_reducer):
   """Default options to be used in the NodeBlock of a generic GraphNetwork."""
-  node_block_opt = node_block_opt or {}
+  node_block_opt = dict(node_block_opt.items()) if node_block_opt else {}
   for k, v in _DEFAULT_NODE_BLOCK_OPT.items():
     node_block_opt[k] = node_block_opt.get(k, v)
   for key in ["received_edges_reducer", "sent_edges_reducer"]:
@@ -220,7 +220,7 @@ def _make_default_node_block_opt(node_block_opt, default_reducer):
 
 def _make_default_global_block_opt(global_block_opt, default_reducer):
   """Default options to be used in the GlobalBlock of a generic GraphNetwork."""
-  global_block_opt = global_block_opt or {}
+  global_block_opt = dict(global_block_opt.items()) if global_block_opt else {}
   for k, v in _DEFAULT_GLOBAL_BLOCK_OPT.items():
     global_block_opt[k] = global_block_opt.get(k, v)
   for key in ["edges_reducer", "nodes_reducer"]:
@@ -255,7 +255,7 @@ class GraphNetwork(snt.AbstractModule):
       global_model_fn: A callable that will be passed to GlobalBlock to perform
         per-global computations. The callable must return a Sonnet module (or
         equivalent; see GlobalBlock for details).
-      reducer: Reducer to be used by NodeBlock and GlobalBlock to to aggregate
+      reducer: Reducer to be used by NodeBlock and GlobalBlock to aggregate
         nodes and edges. Defaults to tf.unsorted_segment_sum. This will be
         overridden by the reducers specified in `node_block_opt` and
         `global_block_opt`, if any.
