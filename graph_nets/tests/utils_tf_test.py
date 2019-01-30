@@ -925,12 +925,17 @@ class GraphsTupleConversionTests(test_utils.GraphsTest, parameterized.TestCase):
       self.assertEqual(tf.float64, getattr(out, key).dtype)
 
 
-class GraphsIndexingTests(test_utils.GraphsTest):
+class GraphsIndexingTests(test_utils.GraphsTest, parameterized.TestCase):
   """Tests for the `get_graph` method."""
 
-  def test_getitem_one(self):
+  @parameterized.named_parameters(("int_index", False),
+                                  ("tensor_index", True))
+  def test_getitem_one(self, use_tensor_index):
     index = 2
     expected = self.graphs_dicts_out[index]
+
+    if use_tensor_index:
+      index = tf.constant(index)
 
     graphs_tuple = utils_tf.data_dicts_to_graphs_tuple(self.graphs_dicts_in)
     graph_op = utils_tf.get_graph(graphs_tuple, index)
@@ -945,9 +950,14 @@ class GraphsIndexingTests(test_utils.GraphsTest):
     self.assertEqual(expected["nodes"].shape[0], actual["n_node"])
     self.assertEqual(expected["edges"].shape[0], actual["n_edge"])
 
-  def test_getitem(self):
+  @parameterized.named_parameters(("int_slice", False),
+                                  ("tensor_slice", True))
+  def test_getitem(self, use_tensor_slice):
     index = slice(1, 3)
     expected = self.graphs_dicts_out[index]
+
+    if use_tensor_slice:
+      index = slice(tf.constant(index.start), tf.constant(index.stop))
 
     graphs_tuple = utils_tf.data_dicts_to_graphs_tuple(self.graphs_dicts_in)
     graphs2_op = utils_tf.get_graph(graphs_tuple, index)
@@ -962,6 +972,33 @@ class GraphsIndexingTests(test_utils.GraphsTest):
         self.assertAllClose(v, ac[k])
       self.assertEqual(ex["nodes"].shape[0], ac["n_node"])
       self.assertEqual(ex["edges"].shape[0], ac["n_edge"])
+
+  @parameterized.named_parameters(
+      ("index_bad_type", 1.,
+       TypeError, "Index must be a valid scalar integer"),
+      ("index_bad_shape", tf.constant([0, 1]),
+       TypeError, "Valid tensor indices must be scalars"),
+      ("index_bad_dtype", tf.constant(1.),
+       TypeError, "Valid tensor indices must have types"),
+      ("slice_bad_type_stop", slice(1.),
+       TypeError, "Valid tensor indices must be integers"),
+      ("slice_bad_shape_stop", slice(tf.constant([0, 1])),
+       TypeError, "Valid tensor indices must be scalars"),
+      ("slice_bad_dtype_stop", slice(tf.constant(1.)),
+       TypeError, "Valid tensor indices must have types"),
+      ("slice_bad_type_start", slice(0., 1),
+       TypeError, "Valid tensor indices must be integers"),
+      ("slice_bad_shape_start", slice(tf.constant([0, 1]), 1),
+       TypeError, "Valid tensor indices must be scalars"),
+      ("slice_bad_dtype_start", slice(tf.constant(0.), 1),
+       TypeError, "Valid tensor indices must have types"),
+      ("slice_with_step", slice(0, 1, 1),
+       ValueError, "slices with step/stride are not supported"),
+  )
+  def test_raises(self, index, error_type, message):
+    graphs_tuple = utils_tf.data_dicts_to_graphs_tuple(self.graphs_dicts_in)
+    with self.assertRaisesRegexp(error_type, message):
+      utils_tf.get_graph(graphs_tuple, index)
 
 
 class TestNumGraphs(test_utils.GraphsTest):

@@ -25,7 +25,9 @@ The Graph Nets library can be installed from pip.
 
 This installation is compatible with Linux/Mac OS X, and Python 2.7 and 3.4+.
 
-The library will work with both the CPU and GPU version of TensorFlow, but to allow for that it does not list Tensorflow as a requirement, so you need to install Tensorflow separately if you haven't already done so.
+The library will work with both the CPU and GPU version of TensorFlow, but to
+allow for that it does not list Tensorflow as a requirement, so you need to
+install Tensorflow separately if you haven't already done so.
 
 To install the Graph Nets library for CPU, run:
 
@@ -111,6 +113,14 @@ Battaglia et al. (2016)'s "interaction networks".
 
 ----------------
 
+#### [Run "graph nets basics demo" in browser](https://colab.research.google.com/github/deepmind/graph_nets/blob/master/graph_nets/demos/graph_nets_basics.ipynb)
+
+The "graph nets basics demo" is a tutorial containing step by step examples
+about how to create and manipulate graphs, how to feed them into
+graph networks and how to build custom graph network modules.
+
+----------------
+
 ### Run the demos on your local machine
 
 To install the necessary dependencies, run:
@@ -126,3 +136,15 @@ $ cd <path-to-graph-nets-library>/demos
 $ jupyter notebook
 ```
 then open a demo through the Jupyter notebook interface.
+
+
+## Other graph neural network libraries
+
+If you use PyTorch, check out these high-quality open-source libraries for
+graph neural networks:
+
+* [pytorch_geometric](https://github.com/rusty1s/pytorch_geometric): See
+[MetaLayer](https://rusty1s.github.io/pytorch_geometric/build/html/modules/nn.html#torch_geometric.nn.meta.MetaLayer)
+for an analog of our Graph Nets interface.
+
+* [Deep Graph Library (DGL)](https://github.com/dmlc/dgl)
