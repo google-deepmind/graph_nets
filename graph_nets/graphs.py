@@ -129,7 +129,22 @@ class GraphsTuple(
   """Default namedtuple describing `Graphs`s.
 
   A children of `collections.namedtuple`s, which allows it to be directly input
-  and output from `tensorflow.Session.run()` calls
+  and output from `tensorflow.Session.run()` calls.
+
+  An instance of this class can be constructed as
+  ```
+  GraphsTuple(nodes=nodes,
+              edges=edges,
+              globals=globals,
+              receivers=receivers,
+              senders=senders,
+              n_node=n_node,
+              n_edge=n_edge)
+  ```
+  where `nodes`, `edges`, `globals`, `receivers`, `senders`, `n_node` and
+  `n_edge` are arbitrary, but are typically numpy arrays, tensors, or `None`;
+  see module's documentation for a more detailed description of which fields
+  can be left `None`.
   """
 
   def _validate_none_fields(self):

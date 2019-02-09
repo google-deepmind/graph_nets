@@ -170,7 +170,7 @@ class BuildPlaceholdersTest(test_utils.GraphsTest, parameterized.TestCase):
     if "edges" not in but_for:
       self.assertAllEqual([None, 3], placeholders.edges.shape.as_list())
     if "globals" not in but_for:
-      self.assertAllEqual([None, 1], placeholders.globals.shape.as_list())
+      self.assertAllEqual([num_graphs, 1], placeholders.globals.shape.as_list())
     for key in ["receivers", "senders"]:
       if key not in but_for:
         self.assertAllEqual([None], getattr(placeholders, key).shape.as_list())
@@ -191,7 +191,7 @@ class BuildPlaceholdersTest(test_utils.GraphsTest, parameterized.TestCase):
     shapes = graphs.GraphsTuple(
         nodes=[3, 4],
         edges=[2],
-        globals=[2, 4, 6],
+        globals=[num_graphs, 4, 6],
         receivers=[None],
         senders=[18],
         n_node=[num_graphs],
@@ -215,7 +215,7 @@ class BuildPlaceholdersTest(test_utils.GraphsTest, parameterized.TestCase):
         self.assertEqual(None, placeholder)
       else:
         self.assertEqual(getattr(dtypes, k), placeholder.dtype)
-        if k not in ["n_node", "n_edge"] or force_dynamic_num_graphs:
+        if k not in ["n_node", "n_edge", "globals"] or force_dynamic_num_graphs:
           self.assertAllEqual([None] + getattr(shapes, k)[1:],
                               placeholder.shape.as_list())
         else:
@@ -230,15 +230,20 @@ class BuildPlaceholdersTest(test_utils.GraphsTest, parameterized.TestCase):
         self.graphs_dicts_in, force_dynamic_num_graphs=force_dynamic_num_graphs)
     self.assertAllEqual([None, 7, 11], placeholders.nodes.shape.as_list())
     self.assertAllEqual([None, 13, 14], placeholders.edges.shape.as_list())
-    self.assertAllEqual([None, 5, 3], placeholders.globals.shape.as_list())
+
+    global_shape = placeholders.globals.shape.as_list()
+    if force_dynamic_num_graphs:
+      self.assertAllEqual([None, 5, 3], global_shape)
+    else:
+      self.assertAllEqual([num_graphs, 5, 3], global_shape)
     for key in ["receivers", "senders"]:
       self.assertAllEqual([None], getattr(placeholders, key).shape.as_list())
     for key in ["n_node", "n_edge"]:
+      shape = getattr(placeholders, key).shape.as_list()
       if force_dynamic_num_graphs:
-        self.assertAllEqual([None], getattr(placeholders, key).shape.as_list())
+        self.assertAllEqual([None], shape)
       else:
-        self.assertAllEqual([num_graphs],
-                            getattr(placeholders, key).shape.as_list())
+        self.assertAllEqual([num_graphs], shape)
 
   def test_placeholders_from_networkxs(self):
     num_graphs = 16

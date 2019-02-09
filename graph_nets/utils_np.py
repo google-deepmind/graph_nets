@@ -274,14 +274,14 @@ def data_dict_to_networkx(data_dict):
     raise ValueError("Cannot create a graph with unspecified number of nodes")
 
   if data_dict[EDGES] is not None and data_dict[EDGES].shape[0] > 0:
-    edges_features = [{
+    edges_features = [{  # pylint: disable=g-complex-comprehension
         "index": i,
         GRAPH_NX_FEATURES_KEY: x
     } for i, x in enumerate(_unstack(data_dict[EDGES]))]
     edges_data = zip(data_dict[SENDERS], data_dict[RECEIVERS], edges_features)
     graph_nx.add_edges_from(edges_data)
   elif data_dict[RECEIVERS] is not None and data_dict[RECEIVERS].shape[0] > 0:
-    edges_features = [{
+    edges_features = [{  # pylint: disable=g-complex-comprehension
         "index": i,
         GRAPH_NX_FEATURES_KEY: None
     } for i in range(data_dict[RECEIVERS].shape[0])]
@@ -375,6 +375,7 @@ def data_dicts_to_graphs_tuple(data_dicts):
     `RECEIVERS`, `SENDERS`, `N_NODE` and `N_EDGE` fields are cast to `np.int32`
     type.
   """
+  data_dicts = [dict(d) for d in data_dicts]
   for key in graphs.GRAPH_DATA_FIELDS:
     for data_dict in data_dicts:
       data_dict.setdefault(key, None)
