@@ -1909,9 +1909,24 @@ would do).
 Default namedtuple describing `Graphs`s.
 
 A children of `collections.namedtuple`s, which allows it to be directly input
-and output from `tensorflow.Session.run()` calls
+and output from `tensorflow.Session.run()` calls.
 
-#### [`graphs.GraphsTuple.__init__(*args, **kwargs)`](https://github.com/deepmind/graph_nets/blob/master/graph_nets/graphs.py?l=153)<!-- graphs.GraphsTuple.__init__ .code-reference -->
+An instance of this class can be constructed as
+```
+GraphsTuple(nodes=nodes,
+            edges=edges,
+            globals=globals,
+            receivers=receivers,
+            senders=senders,
+            n_node=n_node,
+            n_edge=n_edge)
+```
+where `nodes`, `edges`, `globals`, `receivers`, `senders`, `n_node` and
+`n_edge` are arbitrary, but are typically numpy arrays, tensors, or `None`;
+see module's documentation for a more detailed description of which fields
+can be left `None`.
+
+#### [`graphs.GraphsTuple.__init__(*args, **kwargs)`](https://github.com/deepmind/graph_nets/blob/master/graph_nets/graphs.py?l=168)<!-- graphs.GraphsTuple.__init__ .code-reference -->
 
 
 
@@ -1926,7 +1941,7 @@ Alias for field number 1
 Alias for field number 4
 
 
-#### [`graphs.GraphsTuple.map(field_fn, fields=('nodes', 'edges', 'globals'))`](https://github.com/deepmind/graph_nets/blob/master/graph_nets/graphs.py?l=165)<!-- graphs.GraphsTuple.map .code-reference -->
+#### [`graphs.GraphsTuple.map(field_fn, fields=('nodes', 'edges', 'globals'))`](https://github.com/deepmind/graph_nets/blob/master/graph_nets/graphs.py?l=180)<!-- graphs.GraphsTuple.map .code-reference -->
 
 Applies `field_fn` to the fields `fields` of the instance.
 
@@ -1968,7 +1983,7 @@ Alias for field number 0
 Alias for field number 2
 
 
-#### [`graphs.GraphsTuple.replace(**kwargs)`](https://github.com/deepmind/graph_nets/blob/master/graph_nets/graphs.py?l=160)<!-- graphs.GraphsTuple.replace .code-reference -->
+#### [`graphs.GraphsTuple.replace(**kwargs)`](https://github.com/deepmind/graph_nets/blob/master/graph_nets/graphs.py?l=175)<!-- graphs.GraphsTuple.replace .code-reference -->
 
 
 
@@ -4196,7 +4211,7 @@ restoring the correct behavior.
     match.
 
 
-### [`utils_tf.get_graph(input_graphs, index, name='get_graph')`](https://github.com/deepmind/graph_nets/blob/master/graph_nets/utils_tf.py?l=979)<!-- utils_tf.get_graph .code-reference -->
+### [`utils_tf.get_graph(input_graphs, index, name='get_graph')`](https://github.com/deepmind/graph_nets/blob/master/graph_nets/utils_tf.py?l=980)<!-- utils_tf.get_graph .code-reference -->
 
 Indexes into a graph.
 
@@ -4227,7 +4242,7 @@ graphs specified by the slice, and returns them into an another instance of a
 * `ValueError`: if `index` is a slice and `index.step` if not None.
 
 
-### [`utils_tf.get_num_graphs(input_graphs, name='get_num_graphs')`](https://github.com/deepmind/graph_nets/blob/master/graph_nets/utils_tf.py?l=1060)<!-- utils_tf.get_num_graphs .code-reference -->
+### [`utils_tf.get_num_graphs(input_graphs, name='get_num_graphs')`](https://github.com/deepmind/graph_nets/blob/master/graph_nets/utils_tf.py?l=1061)<!-- utils_tf.get_num_graphs .code-reference -->
 
 Returns the number of graphs (i.e. the batch size) in `input_graphs`.
 

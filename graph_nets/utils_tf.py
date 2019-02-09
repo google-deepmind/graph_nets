@@ -157,8 +157,8 @@ def _build_placeholders_from_specs(dtypes,
   dynamic because the numbers of nodes and edges can vary.
   If `force_dynamic_num_graphs` is True, then the number of graphs is assumed to
   be dynamic and all fields leading dimensions are set to `None`.
-  If `force_dynamic_num_graphs` is False, then the `GRAPH_NUMBER_FIELDS` leading
-  dimensions are statically defined.
+  If `force_dynamic_num_graphs` is False, then `N_NODE`, `N_EDGE` and `GLOBALS`
+  leading dimensions are statically defined.
 
   Args:
     dtypes: A `graphs.GraphsTuple` that contains `tf.dtype`s or `None`s.
@@ -186,7 +186,7 @@ def _build_placeholders_from_specs(dtypes,
       raise ValueError("Shapes must have at least rank 1")
     else:
       shape = list(shape)
-      if field in GRAPH_DATA_FIELDS or force_dynamic_num_graphs:
+      if field not in [N_NODE, N_EDGE, GLOBALS] or force_dynamic_num_graphs:
         shape[0] = None
       dct[field] = tf.placeholder(dtype, shape=shape, name=field)
 
@@ -756,7 +756,7 @@ def fully_connect_graph_static(graph,
         k: tf.tile(v, [num_graphs]) for k, v in six.iteritems(one_graph_edges)
     }
     offsets = [
-        num_nodes_per_graph * i
+        num_nodes_per_graph * i  # pylint: disable=g-complex-comprehension
         for i in range(num_graphs)
         for _ in range(n_edges)
     ]
@@ -943,6 +943,7 @@ def data_dicts_to_graphs_tuple(data_dicts, name="data_dicts_to_graphs_tuple"):
   Returns:
     A `graphs.GraphTuple` representing the graphs in `data_dicts`.
   """
+  data_dicts = [dict(d) for d in data_dicts]
   for key in ALL_FIELDS:
     for data_dict in data_dicts:
       data_dict.setdefault(key, None)
