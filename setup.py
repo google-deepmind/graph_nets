@@ -27,7 +27,7 @@ Tensorflow and Sonnet.
 
 setup(
     name="graph_nets",
-    version="1.0.2",
+    version="1.0.3",
     description="Library for building graph networks in Tensorflow and Sonnet.",
     long_description=description,
     author="DeepMind",
