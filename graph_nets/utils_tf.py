@@ -235,7 +235,7 @@ def get_feed_dict(placeholders, graph):
 
   Args:
     placeholders: A `graphs.GraphsTuple` containing placeholders.
-    graph: A `graphs.GraphsTuple` containing placeholder compatibale values,
+    graph: A `graphs.GraphsTuple` containing placeholder compatible values,
       or `None`s.
 
   Returns:
