@@ -3891,7 +3891,7 @@ single instance of `graphs.GraphsTuple` containing numpy arrays.
   type.
 
 
-### [`utils_np.get_graph(input_graphs, index)`](https://github.com/deepmind/graph_nets/blob/master/graph_nets/utils_np.py?l=521)<!-- utils_np.get_graph .code-reference -->
+### [`utils_np.get_graph(input_graphs, index)`](https://github.com/deepmind/graph_nets/blob/master/graph_nets/utils_np.py?l=522)<!-- utils_np.get_graph .code-reference -->
 
 Indexes into a graph.
 
@@ -3918,7 +3918,7 @@ graphs specified by the slice, and returns them into an another instance of a
 * `TypeError`: if `index` is not an `int` or a `slice`.
 
 
-### [`utils_np.graphs_tuple_to_data_dicts(graph)`](https://github.com/deepmind/graph_nets/blob/master/graph_nets/utils_np.py?l=387)<!-- utils_np.graphs_tuple_to_data_dicts .code-reference -->
+### [`utils_np.graphs_tuple_to_data_dicts(graph)`](https://github.com/deepmind/graph_nets/blob/master/graph_nets/utils_np.py?l=388)<!-- utils_np.graphs_tuple_to_data_dicts .code-reference -->
 
 Splits the stored data into a list of individual data dicts.
 

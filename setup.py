@@ -37,7 +37,7 @@ setup(
     packages=find_packages(),
     install_requires=[
         "absl-py",
-        "dm-sonnet==1.23",
+        "dm-sonnet<2",
         "future",
         "networkx",
         "numpy",
