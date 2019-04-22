@@ -61,14 +61,6 @@ import tensorflow as tf
 from graph_nets import graphs
 from graph_nets import utils_tf
 
-# Debug printing
-import pprint
-pp_xfawedfssa = pprint.PrettyPrinter(indent=2)
-def myprint(x):
-  if type(x) == str:
-    print(x)
-  else:
-    pp_xfawedfssa.pprint(x)
 
 def np_dense_to_sparse(arr):
   """Takes in a np.ndarray and returns a sparisification of it"""
@@ -188,7 +180,7 @@ class MyFeature(object):
       placeholder = tf.placeholder(self.dtype, shape=self.shape)
     return {self.key: placeholder}, placeholder
 
-  def get_feed_dict(self, placeholders, values, batch=True):
+  def get_feed_dict(self, placeholders, value_dict, batch=True):
     """Get the `feed_dict` for this feature, mapping placeholders to values.
 
     This creates the `feed_dict` by mapping the appropriate placeholders to the
@@ -196,21 +188,54 @@ class MyFeature(object):
 
     Args:
       placeholders: Dictionary of key strings to placeholders
-      values: Values (typically np.ndarrays or lists) needed to build this
-        feature
+      value_dict: Dictionary of keys to values (typically np.ndarrays or lists)
+        needed to build this feature
       batch: (bool, default=True) Whether to batch the output
 
     Returns:
       feed_dict: Dictionary of placeholders to values for this feature
     """
     if batch:
-      fdict = np.expand_dims(values, 0)  # Add batch dimension
+      val = np.expand_dims(value_dict[self.key], 0)  # Add batch dimension
     else:
-      fdict = values
-    return {placeholders[self.key]: fdict}
+      val = value_dict[self.key]
+    return {placeholders[self.key]: val}
 
   def npz_value(self, value):
     return {self.key: value}
+
+
+class TensorFeature(MyFeature):
+  """Class used for decoding tensors of fixed size."""
+
+  def __init__(self, key, shape, dtype, description):
+    """Initialization of TensorFeature, giving specification of feature.
+
+    Args:
+      key: string acting as name and identifier for this feature
+      shape: list/tuple of int values describing shape of this feature.
+      dtype: string for tf.dtype of this feature
+      description: string describing what this feature (for documentation)
+    """
+    super(TensorFeature, self).__init__(key,
+                                        description,
+                                        shape=shape,
+                                        dtype=dtype)
+
+  def get_feature_write(self, value):
+    v = value.astype(self.dtype).tobytes()
+    feat = tf.train.Feature(bytes_list=tf.train.BytesList(value=[v]))
+    return {self.key: feat}
+
+  def get_feature_read(self):
+    return {self.key: tf.FixedLenFeature([], tf.string)}
+
+  def tensors_to_item(self, keys_to_tensors):
+    tensor = keys_to_tensors[self.key]
+    tensor = tf.decode_raw(tensor, out_type=self.dtype)
+    tensor = tf.reshape(tensor, self.shape)
+    sess = tf.InteractiveSession()
+    return tensor
 
 
 class IntFeature(MyFeature):
@@ -250,45 +275,13 @@ class IntFeature(MyFeature):
     if batch:
       placeholder = tf.placeholder(tf.int64, shape=[None])
     else:
-      placeholder = tf.placeholder(tf.int64)
+      # placeholder = tf.placeholder(tf.int64, shape=())
+      placeholder = tf.placeholder(tf.int64, shape=[])
     if self.convert_to != 'int64':
       sample = tf.cast(placeholder, dtype=self.convert_to)
     else:
       sample = placeholder
     return {self.key: placeholder}, sample
-
-
-class TensorFeature(MyFeature):
-  """Class used for decoding tensors of fixed size."""
-
-  def __init__(self, key, shape, dtype, description):
-    """Initialization of TensorFeature, giving specification of feature.
-
-    Args:
-      key: string acting as name and identifier for this feature
-      shape: list/tuple of int values describing shape of this feature.
-      dtype: string for tf.dtype of this feature
-      description: string describing what this feature (for documentation)
-    """
-    super(TensorFeature, self).__init__(key,
-                                        description,
-                                        shape=shape,
-                                        dtype=dtype)
-
-  def get_feature_write(self, value):
-    v = value.astype(self.dtype).tobytes()
-    feat = tf.train.Feature(bytes_list=tf.train.BytesList(value=[v]))
-    return {self.key: feat}
-
-  def get_feature_read(self):
-    return {self.key: tf.FixedLenFeature([], tf.string)}
-
-  def tensors_to_item(self, keys_to_tensors):
-    tensor = keys_to_tensors[self.key]
-    tensor = tf.decode_raw(tensor, out_type=self.dtype)
-    tensor = tf.reshape(tensor, self.shape)
-    sess = tf.InteractiveSession()
-    return tensor
 
 
 class VarLenIntListFeature(MyFeature):
@@ -472,9 +465,10 @@ class GraphFeature(MyFeature):
             key='n_edge',
             dtype='int32',
             description='Number of edges in this graph'),
-        VarLenFloatFeature(
+        TensorFeature(
             key='globals',
-            shape=[None, global_feature_size],
+            shape=[global_feature_size],
+            dtype='float32',
             description='Edge features'),
         VarLenFloatFeature(
             key='edges',
@@ -527,24 +521,30 @@ class GraphFeature(MyFeature):
 
   # Placeholder related
   def get_placeholder_and_feature(self, batch):
+    del batch # We do not need batch
     placeholders = {}
     sample_dict = {}
     for key, feat in self.features.items():
+      # Due to how graphs are concatenated we only need batch dimension for
+      # globals, n_node, and n_edge
+      batch = False
+      if key in ['globals', 'n_node', 'n_edge']:
+        batch = True
       ph, val = feat.get_placeholder_and_feature(batch=batch)
       placeholders.update(ph)
       sample_dict[key] = val
-    print("-----------------------------------------------------------")
     sample = graphs.GraphsTuple(**sample_dict)
-    myprint(sample_dict)
-    print(sample)
-    print("-----------------------------------------------------------")
     return placeholders, sample
 
   def get_feed_dict(self, placeholders, values, batch):
     fdict = {}
-    for _, feat in self.features.items():
-      # Due to how graphs are concatenated we never need a batch dimension
-      fdict.update(feat.get_feed_dict(placeholders, values, False))
+    for key, feat in self.features.items():
+      # Due to how graphs are concatenated we only need batch dimension for
+      # globals, n_node, and n_edge
+      batch = False
+      if key in ['globals', 'n_node', 'n_edge']:
+        batch = True
+      fdict.update(feat.get_feed_dict(placeholders, values, batch))
     return fdict
 
   def npz_value(self, values):
@@ -605,7 +605,7 @@ class GraphDataset(abc.ABC):
     # Other placeholders
     return sample, placeholders
 
-  def get_feed_dict(self, placeholders, value_dict):
+  def get_feed_dict(self, placeholders, value_dict, batch):
     """Get the `feed_dict` for this dataset, mapping placeholders to values.
 
     This creates the `feed_dict` by mapping the appropriate placeholders to the
@@ -623,7 +623,7 @@ class GraphDataset(abc.ABC):
     """
     feed_dict = {}
     for _, value in self.features.items():
-      feed_dict.update(value.get_feed_dict(placeholders, value_dict))
+      feed_dict.update(value.get_feed_dict(placeholders, value_dict, batch))
     return feed_dict
 
   @abc.abstractmethod
@@ -799,8 +799,8 @@ class GraphDataset(abc.ABC):
   def load_npz_file(self, name, index):
     """
     """
-    fname = os.path.join(mydataset.data_dir, name, '{:04d}.npz')
-    with open(fname.format(iteration), 'r') as npz_file:
+    fname = os.path.join(self.data_dir, name, '{:04d}.npz'.format(index))
+    with open(fname, 'rb') as npz_file:
       npz_dict = dict(np.load(npz_file))
     return npz_dict
 
