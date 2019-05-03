@@ -47,7 +47,7 @@ This representation could typically take the following form, for a batch of
   - EDGES: The edges features. It is either `None` (the graph has no edge
     features), or a vector of shape `[n_edges] + edge_shape`, where
     `n_edges = sum(graph.N_EDGE)` is the total number of edges in the batch of
-    graphs, and `edge_shape` represents the shape of the features of each ede.
+    graphs, and `edge_shape` represents the shape of the features of each edge.
     The relative index of an edge from the batched version can be recovered from
     the `graph.N_EDGE` property. For instance, the third edge of the third
     graph will have its features in the `2 + graph.N_EDGE[0] + graph.N_EDGE[1]`-

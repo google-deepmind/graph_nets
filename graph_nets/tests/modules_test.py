@@ -190,7 +190,7 @@ class GraphIndependentTest(GraphModuleTest):
       ("differently shaped nodes", "nodes"),
       ("differently shaped globals", "globals"),)
   def test_incompatible_higher_rank_inputs_no_raise(self, field_to_reshape):
-    """An InteractionNetwork does not make assumption on its inputs shapes."""
+    """A GraphIndependent does not make assumptions on its inputs shapes."""
     input_graph = self._get_shaped_input_graph()
     edge_model_fn, node_model_fn, global_model_fn = self._get_shaped_model_fns()
     input_graph = input_graph.map(
@@ -728,7 +728,7 @@ class RelationNetworkTest(GraphModuleTest):
   @parameterized.named_parameters(
       ("default name", None), ("custom name", "custom_name"))
   def test_created_variables(self, name=None):
-    """Verifies variable names and shapes created by an InteractionNetwork."""
+    """Verifies variable names and shapes created by a RelationNetwork."""
     name = name if name is not None else "relation_network"
     expected_var_shapes_dict = {
         name + "/edge_block/linear/b:0": [5],
@@ -805,7 +805,7 @@ class RelationNetworkTest(GraphModuleTest):
       ("differently shaped nodes", "nodes"),
       ("differently shaped globals", "globals"),)
   def test_incompatible_higher_rank_inputs_no_raise(self, field_to_reshape):
-    """A RelationNetwork does not make assumption on its inputs shapes."""
+    """A RelationNetwork does not make assumptions on its inputs shapes."""
     input_graph = self._get_shaped_input_graph()
     edge_model_fn, _, global_model_fn = self._get_shaped_model_fns()
     input_graph = input_graph.map(
@@ -931,7 +931,7 @@ class DeepSetsTest(GraphModuleTest):
     self._assert_build_and_run(network, input_graph)
 
   def test_incompatible_higher_rank_inputs_no_raise(self):
-    """A DeepSets does not make assumption on the shape if its input edges."""
+    """A DeepSets does not make assumptions on the shape if its input edges."""
     input_graph = self._get_shaped_input_graph()
     _, node_model_fn, global_model_fn = self._get_shaped_model_fns()
     input_graph = input_graph.replace(
