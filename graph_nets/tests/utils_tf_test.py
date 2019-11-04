@@ -531,6 +531,7 @@ class ComputeOffsetTest(tf.test.TestCase):
   """Tests for the `compute_stacked_offsets` method."""
 
   def setUp(self):
+    super(ComputeOffsetTest, self).setUp()
     tf.reset_default_graph()
     self.sizes = [5, 4, 3, 1, 2, 0, 3, 0, 4, 7]
     self.repeats = [2, 2, 0, 2, 1, 3, 2, 0, 3, 2]

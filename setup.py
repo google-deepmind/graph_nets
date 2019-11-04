@@ -35,6 +35,8 @@ setup(
     keywords=["graph networks", "tensorflow", "sonnet", "machine learning"],
     url="https://github.com/deepmind/graph-nets",
     packages=find_packages(),
+    # Additional "tensorflow" and "tensorflow_probability" requirements should
+    # be installed separately (See README).
     install_requires=[
         "absl-py",
         "dm-sonnet<2",

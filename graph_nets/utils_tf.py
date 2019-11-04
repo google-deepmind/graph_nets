@@ -522,22 +522,7 @@ def repeat(tensor, repeats, axis=0, name="repeat"):
   Returns:
     The `tf.Tensor` with repeated values.
   """
-  with tf.name_scope(name):
-    cumsum = tf.cumsum(repeats)
-    range_ = tf.range(cumsum[-1])
-
-    indicator_matrix = tf.cast(tf.expand_dims(range_, 1) >= cumsum, tf.int32)
-    indices = tf.reduce_sum(indicator_matrix, reduction_indices=1)
-
-    shifted_tensor = _axis_to_inside(tensor, axis)
-    repeated_shifted_tensor = tf.gather(shifted_tensor, indices)
-    repeated_tensor = _inside_to_axis(repeated_shifted_tensor, axis)
-
-    shape = tensor.shape.as_list()
-    shape[axis] = None
-    repeated_tensor.set_shape(shape)
-
-    return repeated_tensor
+  return tf.repeat(tensor, repeats, axis=axis, name=name)
 
 
 def _populate_number_fields(data_dict):

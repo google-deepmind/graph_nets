@@ -103,6 +103,17 @@ def _compute_stacked_offsets(sizes, repeats):
   return np.repeat(np.cumsum(np.hstack([0, sizes[:-1]])), repeats)
 
 
+def _check_key(node_index, key):
+  if node_index != key:
+    raise ValueError(
+        "Nodes of the networkx.OrderedMultiDiGraph must have sequential "
+        "integer keys consistent with the order of the nodes (e.g. "
+        "`list(graph_nx.nodes)[i] == i`), found node with index {} and key {}"
+        .format(node_index, key))
+
+  return True
+
+
 def networkx_to_data_dict(graph_nx,
                           node_shape_hint=None,
                           edge_shape_hint=None,
@@ -127,7 +138,9 @@ def networkx_to_data_dict(graph_nx,
     NODES, EDGES, RECEIVERS, SENDERS, GLOBALS, N_NODE, N_EDGE.
 
   Args:
-    graph_nx: A `networkx.OrderedMultiDiGraph`.
+    graph_nx: A `networkx.OrderedMultiDiGraph`. The node keys must be sequential
+      integer values following the order in which nodes are added to the graph
+      starting from zero. That is `list(graph_nx.nodes)[i] == i`.
     node_shape_hint: (iterable of `int` or `None`, default=`None`) If the graph
       does not contain nodes, the trailing shape for the created `NODES` field.
       If `None` (the default), this field is left `None`. This is not used if
@@ -152,6 +165,8 @@ def networkx_to_data_dict(graph_nx,
       attribute; or if `graph_nx` contains at least one edge with a `None`
       "features" attribute and one least one edge with a non-`None` "features"
       attribute.
+    ValueError: If the nodes have keys that are not consistent with the order
+      of the nodes.
   """
   nodes = None
   try:
@@ -165,9 +180,9 @@ def networkx_to_data_dict(graph_nx,
   else:
     try:
       nodes_data = [
-          x[1][GRAPH_NX_FEATURES_KEY]
-          for x in graph_nx.nodes(data=True)
-          if x[1][GRAPH_NX_FEATURES_KEY] is not None
+          data[GRAPH_NX_FEATURES_KEY]
+          for node_i, (key, data) in enumerate(graph_nx.nodes(data=True))
+          if _check_key(node_i, key) and data[GRAPH_NX_FEATURES_KEY] is not None
       ]
       if nodes_data:
         if len(nodes_data) != number_of_nodes:
@@ -175,7 +190,7 @@ def networkx_to_data_dict(graph_nx,
               "Either all the nodes should have features, or none of them")
         nodes = np.array(nodes_data)
     except KeyError:
-      raise KeyError("Missing 'node' field from the graph nodes. "
+      raise KeyError("Missing 'features' field from the graph nodes. "
                      "This could be due to the node having been silently added "
                      "as a consequence of an edge addition when creating the "
                      "networkx instance")
@@ -252,7 +267,8 @@ def data_dict_to_networkx(data_dict):
     data_dict: A graph `dict` of Numpy data.
 
   Returns:
-    The `networkx.OrderedMultiDiGraph`.
+    The `networkx.OrderedMultiDiGraph`. The node keys will be the data_dict
+    integer node indices.
 
   Raises:
     ValueError: If the `NODES` field of `data_dict` contains `None`, and
@@ -312,7 +328,10 @@ def networkxs_to_graphs_tuple(graph_nxs,
     NODES, EDGES, RECEIVERS, SENDERS, GLOBALS, N_NODE, N_EDGE.
 
   Args:
-    graph_nxs: A container of `networkx.OrderedMultiDiGraph`s.
+    graph_nxs: A container of `networkx.OrderedMultiDiGraph`s. The node keys
+      must be sequential integer values following the order in which nodes are
+      added to the graph starting from zero. That is
+      `list(graph_nx.nodes)[i] == i`.
     node_shape_hint: (iterable of `int` or `None`, default=`None`) If the graph
       does not contain nodes, the trailing shape for the created `NODES` field.
       If `None` (the default), this field is left `None`. This is not used if
@@ -350,7 +369,8 @@ def graphs_tuple_to_networkxs(graphs_tuple):
     graphs_tuple: A `graphs.GraphsTuple` instance containing numpy arrays.
 
   Returns:
-    The list of `networkx.OrderedMultiDiGraph`s.
+    The list of `networkx.OrderedMultiDiGraph`s. The node keys will be the data
+    dict integer node indices.
   """
   return [
       data_dict_to_networkx(x) for x in graphs_tuple_to_data_dicts(graphs_tuple)
