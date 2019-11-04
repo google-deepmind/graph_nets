@@ -201,6 +201,24 @@ class NetworkxConversionTest(test_utils.GraphsTest, parameterized.TestCase):
     graph = utils_np.networkxs_to_graphs_tuple(graph_nxs, **hints)
     self._assert_graph_equals_np(graph0, graph, force_edges_ordering=True)
 
+  def test_networkxs_to_data_dict_raises_node_key_error(self):
+    """If the nodes have keys not consistent with the order they were added."""
+    graph_nx = nx.OrderedMultiDiGraph()
+    graph_nx.add_node(0, features=None)
+    graph_nx.add_node(1, features=None)
+    graph_nx.add_node(3, features=None)
+
+    with self.assertRaisesRegexp(
+        ValueError, "found node with index 2 and key 3"):
+      utils_np.networkx_to_data_dict(graph_nx)
+
+    # Check that it is still raised even if there is a node with each key,
+    # and only the order is wrong.
+    graph_nx.add_node(2, features=None)
+    with self.assertRaisesRegexp(
+        ValueError, "found node with index 2 and key 3"):
+      utils_np.networkx_to_data_dict(graph_nx)
+
   def test_networkxs_to_graphs_tuple_raises_key_error(self):
     """If the "features" field is not present in the nodes or edges."""
     graph_nx = _single_data_dict_to_networkx(self.graphs_dicts_in[-1])
