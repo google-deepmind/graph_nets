@@ -16,7 +16,7 @@ and the global features of the corresponding graph.
 
 See https://arxiv.org/abs/1806.01261 for more details.
 
-#### [`blocks.EdgeBlock.__init__(edge_model_fn, use_edges=True, use_receiver_nodes=True, use_sender_nodes=True, use_globals=True, name='edge_block')`](https://github.com/deepmind/graph_nets/blob/master/graph_nets/blocks.py?l=374)<!-- blocks.EdgeBlock.__init__ .code-reference -->
+#### [`blocks.EdgeBlock.__init__(edge_model_fn, use_edges=True, use_receiver_nodes=True, use_sender_nodes=True, use_globals=True, name='edge_block')`](https://github.com/deepmind/graph_nets/blob/master/graph_nets/blocks.py?l=379)<!-- blocks.EdgeBlock.__init__ .code-reference -->
 
 Initializes the EdgeBlock module.
 
@@ -46,7 +46,7 @@ Initializes the EdgeBlock module.
 * `ValueError`: When fields that are required are missing.
 
 
-#### [`blocks.EdgeBlock.__call__(graph)`](https://github.com/deepmind/graph_nets/blob/master/graph_nets/blocks.py?l=418)<!-- blocks.EdgeBlock.__call__ .code-reference -->
+#### [`blocks.EdgeBlock.__call__(graph)`](https://github.com/deepmind/graph_nets/blob/master/graph_nets/blocks.py?l=423)<!-- blocks.EdgeBlock.__call__ .code-reference -->
 
 Connects the edge block.
 
@@ -97,8 +97,8 @@ information.
 
 
 * `collection`: Collection to restrict query to. By default this is
-    `tf.Graphkeys.TRAINABLE_VARIABLES`, which doesn't include non-trainable
-    variables such as moving averages.
+    `tf.compat.v1.GraphKeys.TRAINABLE_VARIABLES`, which doesn't
+    include non-trainable variables such as moving averages.
 
 ##### Returns:
 
@@ -110,7 +110,7 @@ information.
 * `NotConnectedError`: If the module is not connected to the Graph.
 
 
-#### [`blocks.EdgeBlock.get_possible_initializer_keys(cls)`](https://github.com/deepmind/sonnet/blob/master/sonnet/python/modules/base.py)<!-- blocks.EdgeBlock.get_possible_initializer_keys .code-reference -->
+#### [`blocks.EdgeBlock.get_possible_initializer_keys()`](https://github.com/deepmind/sonnet/blob/master/sonnet/python/modules/base.py)<!-- blocks.EdgeBlock.get_possible_initializer_keys .code-reference -->
 
 Returns the keys the dictionary of variable initializers may contain.
 
@@ -140,8 +140,8 @@ connected to.
 
 
 * `collection`: Collection to restrict query to. By default this is
-    `tf.Graphkeys.TRAINABLE_VARIABLES`, which doesn't include non-trainable
-    variables such as moving averages.
+    `tf.compat.v1.GraphKeys.TRAINABLE_VARIABLES`, which doesn't
+    include non-trainable variables such as moving averages.
 
 ##### Returns:
 
@@ -291,9 +291,9 @@ vector per graph). The reducer should take a `Tensor` of edge features, a
 under permutation of edge features within each graph.
 
 Examples of compatible reducers are:
-* tf.unsorted_segment_sum
-* tf.unsorted_segment_mean
-* tf.unsorted_segment_prod
+* tf.math.unsorted_segment_sum
+* tf.math.unsorted_segment_mean
+* tf.math.unsorted_segment_prod
 * unsorted_segment_min_or_zero
 * unsorted_segment_max_or_zero
 
@@ -307,7 +307,19 @@ Examples of compatible reducers are:
 
 #### [`blocks.EdgesToGlobalsAggregator.__call__(graph)`](https://github.com/deepmind/graph_nets/blob/master/graph_nets/blocks.py?l=188)<!-- blocks.EdgesToGlobalsAggregator.__call__ .code-reference -->
 
+Add elements to the Graph, computing output Tensors from input Tensors.
 
+Subclasses must implement this method, which will be wrapped in a Template.
+
+##### Args:
+
+
+* `*args`: Input Tensors.
+* `**kwargs`: Additional Python flags controlling connection.
+
+##### Returns:
+
+  output Tensor(s).
 
 
 #### [`blocks.EdgesToGlobalsAggregator.connected_subgraphs`](https://github.com/deepmind/sonnet/blob/master/sonnet/python/modules/base.py)<!-- blocks.EdgesToGlobalsAggregator.connected_subgraphs .code-reference -->
@@ -336,8 +348,8 @@ information.
 
 
 * `collection`: Collection to restrict query to. By default this is
-    `tf.Graphkeys.TRAINABLE_VARIABLES`, which doesn't include non-trainable
-    variables such as moving averages.
+    `tf.compat.v1.GraphKeys.TRAINABLE_VARIABLES`, which doesn't
+    include non-trainable variables such as moving averages.
 
 ##### Returns:
 
@@ -349,7 +361,7 @@ information.
 * `NotConnectedError`: If the module is not connected to the Graph.
 
 
-#### [`blocks.EdgesToGlobalsAggregator.get_possible_initializer_keys(cls)`](https://github.com/deepmind/sonnet/blob/master/sonnet/python/modules/base.py)<!-- blocks.EdgesToGlobalsAggregator.get_possible_initializer_keys .code-reference -->
+#### [`blocks.EdgesToGlobalsAggregator.get_possible_initializer_keys()`](https://github.com/deepmind/sonnet/blob/master/sonnet/python/modules/base.py)<!-- blocks.EdgesToGlobalsAggregator.get_possible_initializer_keys .code-reference -->
 
 Returns the keys the dictionary of variable initializers may contain.
 
@@ -379,8 +391,8 @@ connected to.
 
 
 * `collection`: Collection to restrict query to. By default this is
-    `tf.Graphkeys.TRAINABLE_VARIABLES`, which doesn't include non-trainable
-    variables such as moving averages.
+    `tf.compat.v1.GraphKeys.TRAINABLE_VARIABLES`, which doesn't
+    include non-trainable variables such as moving averages.
 
 ##### Returns:
 
@@ -525,7 +537,7 @@ edges of the graph, and the aggregated features of the nodes of the graph.
 
 See https://arxiv.org/abs/1806.01261 for more details.
 
-#### [`blocks.GlobalBlock.__init__(global_model_fn, use_edges=True, use_nodes=True, use_globals=True, nodes_reducer=unsorted_segment_sum, edges_reducer=unsorted_segment_sum, name='global_block')`](https://github.com/deepmind/graph_nets/blob/master/graph_nets/blocks.py?l=579)<!-- blocks.GlobalBlock.__init__ .code-reference -->
+#### [`blocks.GlobalBlock.__init__(global_model_fn, use_edges=True, use_nodes=True, use_globals=True, nodes_reducer=<function unsorted_segment_sum>, edges_reducer=<function unsorted_segment_sum>, name='global_block')`](https://github.com/deepmind/graph_nets/blob/master/graph_nets/blocks.py?l=584)<!-- blocks.GlobalBlock.__init__ .code-reference -->
 
 Initializes the GlobalBlock module.
 
@@ -545,9 +557,9 @@ Initializes the GlobalBlock module.
 * `use_globals`: (bool, default=True) Whether to condition on global
     attributes.
 * `nodes_reducer`: Reduction to be used when aggregating nodes. This should
-    be a callable whose signature matches tf.unsorted_segment_sum.
+    be a callable whose signature matches tf.math.unsorted_segment_sum.
 * `edges_reducer`: Reduction to be used when aggregating edges. This should
-    be a callable whose signature matches tf.unsorted_segment_sum.
+    be a callable whose signature matches tf.math.unsorted_segment_sum.
 * `name`: The module name.
 
 ##### Raises:
@@ -556,7 +568,7 @@ Initializes the GlobalBlock module.
 * `ValueError`: When fields that are required are missing.
 
 
-#### [`blocks.GlobalBlock.__call__(graph)`](https://github.com/deepmind/graph_nets/blob/master/graph_nets/blocks.py?l=637)<!-- blocks.GlobalBlock.__call__ .code-reference -->
+#### [`blocks.GlobalBlock.__call__(graph)`](https://github.com/deepmind/graph_nets/blob/master/graph_nets/blocks.py?l=642)<!-- blocks.GlobalBlock.__call__ .code-reference -->
 
 Connects the global block.
 
@@ -599,8 +611,8 @@ information.
 
 
 * `collection`: Collection to restrict query to. By default this is
-    `tf.Graphkeys.TRAINABLE_VARIABLES`, which doesn't include non-trainable
-    variables such as moving averages.
+    `tf.compat.v1.GraphKeys.TRAINABLE_VARIABLES`, which doesn't
+    include non-trainable variables such as moving averages.
 
 ##### Returns:
 
@@ -612,7 +624,7 @@ information.
 * `NotConnectedError`: If the module is not connected to the Graph.
 
 
-#### [`blocks.GlobalBlock.get_possible_initializer_keys(cls)`](https://github.com/deepmind/sonnet/blob/master/sonnet/python/modules/base.py)<!-- blocks.GlobalBlock.get_possible_initializer_keys .code-reference -->
+#### [`blocks.GlobalBlock.get_possible_initializer_keys()`](https://github.com/deepmind/sonnet/blob/master/sonnet/python/modules/base.py)<!-- blocks.GlobalBlock.get_possible_initializer_keys .code-reference -->
 
 Returns the keys the dictionary of variable initializers may contain.
 
@@ -642,8 +654,8 @@ connected to.
 
 
 * `collection`: Collection to restrict query to. By default this is
-    `tf.Graphkeys.TRAINABLE_VARIABLES`, which doesn't include non-trainable
-    variables such as moving averages.
+    `tf.compat.v1.GraphKeys.TRAINABLE_VARIABLES`, which doesn't
+    include non-trainable variables such as moving averages.
 
 ##### Returns:
 
@@ -788,7 +800,7 @@ adjacent edges, and the global features of the corresponding graph.
 
 See https://arxiv.org/abs/1806.01261 for more details.
 
-#### [`blocks.NodeBlock.__init__(node_model_fn, use_received_edges=True, use_sent_edges=False, use_nodes=True, use_globals=True, received_edges_reducer=unsorted_segment_sum, sent_edges_reducer=unsorted_segment_sum, name='node_block')`](https://github.com/deepmind/graph_nets/blob/master/graph_nets/blocks.py?l=469)<!-- blocks.NodeBlock.__init__ .code-reference -->
+#### [`blocks.NodeBlock.__init__(node_model_fn, use_received_edges=True, use_sent_edges=False, use_nodes=True, use_globals=True, received_edges_reducer=<function unsorted_segment_sum>, sent_edges_reducer=<function unsorted_segment_sum>, name='node_block')`](https://github.com/deepmind/graph_nets/blob/master/graph_nets/blocks.py?l=474)<!-- blocks.NodeBlock.__init__ .code-reference -->
 
 Initializes the NodeBlock module.
 
@@ -812,10 +824,10 @@ Initializes the NodeBlock module.
     attributes.
 * `received_edges_reducer`: Reduction to be used when aggregating received
     edges. This should be a callable whose signature matches
-    `tf.unsorted_segment_sum`.
+    `tf.math.unsorted_segment_sum`.
 * `sent_edges_reducer`: Reduction to be used when aggregating sent edges.
     This should be a callable whose signature matches
-    `tf.unsorted_segment_sum`.
+    `tf.math.unsorted_segment_sum`.
 * `name`: The module name.
 
 ##### Raises:
@@ -824,7 +836,7 @@ Initializes the NodeBlock module.
 * `ValueError`: When fields that are required are missing.
 
 
-#### [`blocks.NodeBlock.__call__(graph)`](https://github.com/deepmind/graph_nets/blob/master/graph_nets/blocks.py?l=536)<!-- blocks.NodeBlock.__call__ .code-reference -->
+#### [`blocks.NodeBlock.__call__(graph)`](https://github.com/deepmind/graph_nets/blob/master/graph_nets/blocks.py?l=541)<!-- blocks.NodeBlock.__call__ .code-reference -->
 
 Connects the node block.
 
@@ -867,8 +879,8 @@ information.
 
 
 * `collection`: Collection to restrict query to. By default this is
-    `tf.Graphkeys.TRAINABLE_VARIABLES`, which doesn't include non-trainable
-    variables such as moving averages.
+    `tf.compat.v1.GraphKeys.TRAINABLE_VARIABLES`, which doesn't
+    include non-trainable variables such as moving averages.
 
 ##### Returns:
 
@@ -880,7 +892,7 @@ information.
 * `NotConnectedError`: If the module is not connected to the Graph.
 
 
-#### [`blocks.NodeBlock.get_possible_initializer_keys(cls)`](https://github.com/deepmind/sonnet/blob/master/sonnet/python/modules/base.py)<!-- blocks.NodeBlock.get_possible_initializer_keys .code-reference -->
+#### [`blocks.NodeBlock.get_possible_initializer_keys()`](https://github.com/deepmind/sonnet/blob/master/sonnet/python/modules/base.py)<!-- blocks.NodeBlock.get_possible_initializer_keys .code-reference -->
 
 Returns the keys the dictionary of variable initializers may contain.
 
@@ -910,8 +922,8 @@ connected to.
 
 
 * `collection`: Collection to restrict query to. By default this is
-    `tf.Graphkeys.TRAINABLE_VARIABLES`, which doesn't include non-trainable
-    variables such as moving averages.
+    `tf.compat.v1.GraphKeys.TRAINABLE_VARIABLES`, which doesn't
+    include non-trainable variables such as moving averages.
 
 ##### Returns:
 
@@ -1061,9 +1073,9 @@ vector per graph). The reducer should take a `Tensor` of node features, a
 under permutation of node features within each graph.
 
 Examples of compatible reducers are:
-* tf.unsorted_segment_sum
-* tf.unsorted_segment_mean
-* tf.unsorted_segment_prod
+* tf.math.unsorted_segment_sum
+* tf.math.unsorted_segment_mean
+* tf.math.unsorted_segment_prod
 * unsorted_segment_min_or_zero
 * unsorted_segment_max_or_zero
 
@@ -1077,7 +1089,19 @@ Examples of compatible reducers are:
 
 #### [`blocks.NodesToGlobalsAggregator.__call__(graph)`](https://github.com/deepmind/graph_nets/blob/master/graph_nets/blocks.py?l=224)<!-- blocks.NodesToGlobalsAggregator.__call__ .code-reference -->
 
+Add elements to the Graph, computing output Tensors from input Tensors.
 
+Subclasses must implement this method, which will be wrapped in a Template.
+
+##### Args:
+
+
+* `*args`: Input Tensors.
+* `**kwargs`: Additional Python flags controlling connection.
+
+##### Returns:
+
+  output Tensor(s).
 
 
 #### [`blocks.NodesToGlobalsAggregator.connected_subgraphs`](https://github.com/deepmind/sonnet/blob/master/sonnet/python/modules/base.py)<!-- blocks.NodesToGlobalsAggregator.connected_subgraphs .code-reference -->
@@ -1106,8 +1130,8 @@ information.
 
 
 * `collection`: Collection to restrict query to. By default this is
-    `tf.Graphkeys.TRAINABLE_VARIABLES`, which doesn't include non-trainable
-    variables such as moving averages.
+    `tf.compat.v1.GraphKeys.TRAINABLE_VARIABLES`, which doesn't
+    include non-trainable variables such as moving averages.
 
 ##### Returns:
 
@@ -1119,7 +1143,7 @@ information.
 * `NotConnectedError`: If the module is not connected to the Graph.
 
 
-#### [`blocks.NodesToGlobalsAggregator.get_possible_initializer_keys(cls)`](https://github.com/deepmind/sonnet/blob/master/sonnet/python/modules/base.py)<!-- blocks.NodesToGlobalsAggregator.get_possible_initializer_keys .code-reference -->
+#### [`blocks.NodesToGlobalsAggregator.get_possible_initializer_keys()`](https://github.com/deepmind/sonnet/blob/master/sonnet/python/modules/base.py)<!-- blocks.NodesToGlobalsAggregator.get_possible_initializer_keys .code-reference -->
 
 Returns the keys the dictionary of variable initializers may contain.
 
@@ -1149,8 +1173,8 @@ connected to.
 
 
 * `collection`: Collection to restrict query to. By default this is
-    `tf.Graphkeys.TRAINABLE_VARIABLES`, which doesn't include non-trainable
-    variables such as moving averages.
+    `tf.compat.v1.GraphKeys.TRAINABLE_VARIABLES`, which doesn't
+    include non-trainable variables such as moving averages.
 
 ##### Returns:
 
@@ -1289,7 +1313,7 @@ information about what variables are captured.
 
 Agregates received edges into the corresponding receiver nodes.
 
-#### [`blocks.ReceivedEdgesToNodesAggregator.__init__(reducer, name='received_edges_to_nodes_aggregator')`](https://github.com/deepmind/graph_nets/blob/master/graph_nets/blocks.py?l=283)<!-- blocks.ReceivedEdgesToNodesAggregator.__init__ .code-reference -->
+#### [`blocks.ReceivedEdgesToNodesAggregator.__init__(reducer, name='received_edges_to_nodes_aggregator')`](https://github.com/deepmind/graph_nets/blob/master/graph_nets/blocks.py?l=288)<!-- blocks.ReceivedEdgesToNodesAggregator.__init__ .code-reference -->
 
 Constructor.
 
@@ -1300,9 +1324,9 @@ vector per node). The reducer should take a `Tensor` of edge features, a
 under permutation of edge features within each segment.
 
 Examples of compatible reducers are:
-* tf.unsorted_segment_sum
-* tf.unsorted_segment_mean
-* tf.unsorted_segment_prod
+* tf.math.unsorted_segment_sum
+* tf.math.unsorted_segment_mean
+* tf.math.unsorted_segment_prod
 * unsorted_segment_min_or_zero
 * unsorted_segment_max_or_zero
 
@@ -1316,7 +1340,19 @@ Examples of compatible reducers are:
 
 #### [`blocks.ReceivedEdgesToNodesAggregator.__call__(graph)`](https://github.com/deepmind/graph_nets/blob/master/graph_nets/blocks.py?l=242)<!-- blocks.ReceivedEdgesToNodesAggregator.__call__ .code-reference -->
 
+Add elements to the Graph, computing output Tensors from input Tensors.
 
+Subclasses must implement this method, which will be wrapped in a Template.
+
+##### Args:
+
+
+* `*args`: Input Tensors.
+* `**kwargs`: Additional Python flags controlling connection.
+
+##### Returns:
+
+  output Tensor(s).
 
 
 #### [`blocks.ReceivedEdgesToNodesAggregator.connected_subgraphs`](https://github.com/deepmind/sonnet/blob/master/sonnet/python/modules/base.py)<!-- blocks.ReceivedEdgesToNodesAggregator.connected_subgraphs .code-reference -->
@@ -1345,8 +1381,8 @@ information.
 
 
 * `collection`: Collection to restrict query to. By default this is
-    `tf.Graphkeys.TRAINABLE_VARIABLES`, which doesn't include non-trainable
-    variables such as moving averages.
+    `tf.compat.v1.GraphKeys.TRAINABLE_VARIABLES`, which doesn't
+    include non-trainable variables such as moving averages.
 
 ##### Returns:
 
@@ -1358,7 +1394,7 @@ information.
 * `NotConnectedError`: If the module is not connected to the Graph.
 
 
-#### [`blocks.ReceivedEdgesToNodesAggregator.get_possible_initializer_keys(cls)`](https://github.com/deepmind/sonnet/blob/master/sonnet/python/modules/base.py)<!-- blocks.ReceivedEdgesToNodesAggregator.get_possible_initializer_keys .code-reference -->
+#### [`blocks.ReceivedEdgesToNodesAggregator.get_possible_initializer_keys()`](https://github.com/deepmind/sonnet/blob/master/sonnet/python/modules/base.py)<!-- blocks.ReceivedEdgesToNodesAggregator.get_possible_initializer_keys .code-reference -->
 
 Returns the keys the dictionary of variable initializers may contain.
 
@@ -1388,8 +1424,8 @@ connected to.
 
 
 * `collection`: Collection to restrict query to. By default this is
-    `tf.Graphkeys.TRAINABLE_VARIABLES`, which doesn't include non-trainable
-    variables such as moving averages.
+    `tf.compat.v1.GraphKeys.TRAINABLE_VARIABLES`, which doesn't
+    include non-trainable variables such as moving averages.
 
 ##### Returns:
 
@@ -1528,7 +1564,7 @@ information about what variables are captured.
 
 Agregates sent edges into the corresponding sender nodes.
 
-#### [`blocks.SentEdgesToNodesAggregator.__init__(reducer, name='sent_edges_to_nodes_aggregator')`](https://github.com/deepmind/graph_nets/blob/master/graph_nets/blocks.py?l=253)<!-- blocks.SentEdgesToNodesAggregator.__init__ .code-reference -->
+#### [`blocks.SentEdgesToNodesAggregator.__init__(reducer, name='sent_edges_to_nodes_aggregator')`](https://github.com/deepmind/graph_nets/blob/master/graph_nets/blocks.py?l=258)<!-- blocks.SentEdgesToNodesAggregator.__init__ .code-reference -->
 
 Constructor.
 
@@ -1539,9 +1575,9 @@ vector per node). The reducer should take a `Tensor` of edge features, a
 under permutation of edge features within each segment.
 
 Examples of compatible reducers are:
-* tf.unsorted_segment_sum
-* tf.unsorted_segment_mean
-* tf.unsorted_segment_prod
+* tf.math.unsorted_segment_sum
+* tf.math.unsorted_segment_mean
+* tf.math.unsorted_segment_prod
 * unsorted_segment_min_or_zero
 * unsorted_segment_max_or_zero
 
@@ -1555,7 +1591,19 @@ Examples of compatible reducers are:
 
 #### [`blocks.SentEdgesToNodesAggregator.__call__(graph)`](https://github.com/deepmind/graph_nets/blob/master/graph_nets/blocks.py?l=242)<!-- blocks.SentEdgesToNodesAggregator.__call__ .code-reference -->
 
+Add elements to the Graph, computing output Tensors from input Tensors.
 
+Subclasses must implement this method, which will be wrapped in a Template.
+
+##### Args:
+
+
+* `*args`: Input Tensors.
+* `**kwargs`: Additional Python flags controlling connection.
+
+##### Returns:
+
+  output Tensor(s).
 
 
 #### [`blocks.SentEdgesToNodesAggregator.connected_subgraphs`](https://github.com/deepmind/sonnet/blob/master/sonnet/python/modules/base.py)<!-- blocks.SentEdgesToNodesAggregator.connected_subgraphs .code-reference -->
@@ -1584,8 +1632,8 @@ information.
 
 
 * `collection`: Collection to restrict query to. By default this is
-    `tf.Graphkeys.TRAINABLE_VARIABLES`, which doesn't include non-trainable
-    variables such as moving averages.
+    `tf.compat.v1.GraphKeys.TRAINABLE_VARIABLES`, which doesn't
+    include non-trainable variables such as moving averages.
 
 ##### Returns:
 
@@ -1597,7 +1645,7 @@ information.
 * `NotConnectedError`: If the module is not connected to the Graph.
 
 
-#### [`blocks.SentEdgesToNodesAggregator.get_possible_initializer_keys(cls)`](https://github.com/deepmind/sonnet/blob/master/sonnet/python/modules/base.py)<!-- blocks.SentEdgesToNodesAggregator.get_possible_initializer_keys .code-reference -->
+#### [`blocks.SentEdgesToNodesAggregator.get_possible_initializer_keys()`](https://github.com/deepmind/sonnet/blob/master/sonnet/python/modules/base.py)<!-- blocks.SentEdgesToNodesAggregator.get_possible_initializer_keys .code-reference -->
 
 Returns the keys the dictionary of variable initializers may contain.
 
@@ -1627,8 +1675,8 @@ connected to.
 
 
 * `collection`: Collection to restrict query to. By default this is
-    `tf.Graphkeys.TRAINABLE_VARIABLES`, which doesn't include non-trainable
-    variables such as moving averages.
+    `tf.compat.v1.GraphKeys.TRAINABLE_VARIABLES`, which doesn't
+    include non-trainable variables such as moving averages.
 
 ##### Returns:
 
@@ -1862,13 +1910,13 @@ Broadcasts the node features to the edges they are sending into.
 * `ValueError`: If either `graph.nodes` or `graph.senders` is `None`.
 
 
-### [`blocks.unsorted_segment_max_or_zero(values, indices, num_groups, name='unsorted_segment_max_or_zero')`](https://github.com/deepmind/graph_nets/blob/master/graph_nets/blocks.py?l=342)<!-- blocks.unsorted_segment_max_or_zero .code-reference -->
+### [`blocks.unsorted_segment_max_or_zero(values, indices, num_groups, name='unsorted_segment_max_or_zero')`](https://github.com/deepmind/graph_nets/blob/master/graph_nets/blocks.py?l=347)<!-- blocks.unsorted_segment_max_or_zero .code-reference -->
 
 Aggregates information using elementwise max.
 
 Segments with no elements are given a "max" of zero instead of the most
-negative finite value possible (which is what `tf.unsorted_segment_max` would
-do).
+negative finite value possible (which is what `tf.math.unsorted_segment_max`
+would do).
 
 ##### Args:
 
@@ -1883,12 +1931,12 @@ do).
   A `Tensor` of the same type as `values`.
 
 
-### [`blocks.unsorted_segment_min_or_zero(values, indices, num_groups, name='unsorted_segment_min_or_zero')`](https://github.com/deepmind/graph_nets/blob/master/graph_nets/blocks.py?l=320)<!-- blocks.unsorted_segment_min_or_zero .code-reference -->
+### [`blocks.unsorted_segment_min_or_zero(values, indices, num_groups, name='unsorted_segment_min_or_zero')`](https://github.com/deepmind/graph_nets/blob/master/graph_nets/blocks.py?l=325)<!-- blocks.unsorted_segment_min_or_zero .code-reference -->
 
 Aggregates information using elementwise min.
 
 Segments with no elements are given a "min" of zero instead of the most
-positive finite value possible (which is what `tf.unsorted_segment_min`
+positive finite value possible (which is what `tf.math.unsorted_segment_min`
 would do).
 
 ##### Args:
@@ -1926,9 +1974,9 @@ where `nodes`, `edges`, `globals`, `receivers`, `senders`, `n_node` and
 see module's documentation for a more detailed description of which fields
 can be left `None`.
 
-#### [`graphs.GraphsTuple.__init__(*args, **kwargs)`](https://github.com/deepmind/graph_nets/blob/master/graph_nets/graphs.py?l=168)<!-- graphs.GraphsTuple.__init__ .code-reference -->
+#### [`graphs.GraphsTuple.__init__(*args, **kwargs)`](https://github.com/deepmind/graph_nets/blob/master/graph_nets/graphs.py?l=178)<!-- graphs.GraphsTuple.__init__ .code-reference -->
 
-
+Initialize self.  See help(type(self)) for accurate signature.
 
 
 #### `graphs.GraphsTuple.edges`<!-- graphs.GraphsTuple.edges .code-reference -->
@@ -1941,7 +1989,7 @@ Alias for field number 1
 Alias for field number 4
 
 
-#### [`graphs.GraphsTuple.map(field_fn, fields=('nodes', 'edges', 'globals'))`](https://github.com/deepmind/graph_nets/blob/master/graph_nets/graphs.py?l=180)<!-- graphs.GraphsTuple.map .code-reference -->
+#### [`graphs.GraphsTuple.map(field_fn, fields=('nodes', 'edges', 'globals'))`](https://github.com/deepmind/graph_nets/blob/master/graph_nets/graphs.py?l=196)<!-- graphs.GraphsTuple.map .code-reference -->
 
 Applies `field_fn` to the fields `fields` of the instance.
 
@@ -1983,7 +2031,7 @@ Alias for field number 0
 Alias for field number 2
 
 
-#### [`graphs.GraphsTuple.replace(**kwargs)`](https://github.com/deepmind/graph_nets/blob/master/graph_nets/graphs.py?l=175)<!-- graphs.GraphsTuple.replace .code-reference -->
+#### [`graphs.GraphsTuple.replace(**kwargs)`](https://github.com/deepmind/graph_nets/blob/master/graph_nets/graphs.py?l=191)<!-- graphs.GraphsTuple.replace .code-reference -->
 
 
 
@@ -2012,7 +2060,7 @@ uses its receivers and senders information. The output graph has the same
 value in edge and global fields as the input graph. The edge and global
 features fields may have a `None` value in the input `gn_graphs.GraphsTuple`.
 
-#### [`modules.CommNet.__init__(edge_model_fn, node_encoder_model_fn, node_model_fn, reducer=unsorted_segment_sum, name='comm_net')`](https://github.com/deepmind/graph_nets/blob/master/graph_nets/modules.py?l=469)<!-- modules.CommNet.__init__ .code-reference -->
+#### [`modules.CommNet.__init__(edge_model_fn, node_encoder_model_fn, node_model_fn, reducer=<function unsorted_segment_sum>, name='comm_net')`](https://github.com/deepmind/graph_nets/blob/master/graph_nets/modules.py?l=469)<!-- modules.CommNet.__init__ .code-reference -->
 
 Initializes the CommNet module.
 
@@ -2030,7 +2078,7 @@ Initializes the CommNet module.
     return a Sonnet module (or equivalent; see NodeBlock for details).
 * `reducer`: Reduction to be used when aggregating the edges in the nodes.
     This should be a callable whose signature matches
-    tf.unsorted_segment_sum.
+    tf.math.unsorted_segment_sum.
 * `name`: The module name.
 
 
@@ -2081,8 +2129,8 @@ information.
 
 
 * `collection`: Collection to restrict query to. By default this is
-    `tf.Graphkeys.TRAINABLE_VARIABLES`, which doesn't include non-trainable
-    variables such as moving averages.
+    `tf.compat.v1.GraphKeys.TRAINABLE_VARIABLES`, which doesn't
+    include non-trainable variables such as moving averages.
 
 ##### Returns:
 
@@ -2094,7 +2142,7 @@ information.
 * `NotConnectedError`: If the module is not connected to the Graph.
 
 
-#### [`modules.CommNet.get_possible_initializer_keys(cls)`](https://github.com/deepmind/sonnet/blob/master/sonnet/python/modules/base.py)<!-- modules.CommNet.get_possible_initializer_keys .code-reference -->
+#### [`modules.CommNet.get_possible_initializer_keys()`](https://github.com/deepmind/sonnet/blob/master/sonnet/python/modules/base.py)<!-- modules.CommNet.get_possible_initializer_keys .code-reference -->
 
 Returns the keys the dictionary of variable initializers may contain.
 
@@ -2124,8 +2172,8 @@ connected to.
 
 
 * `collection`: Collection to restrict query to. By default this is
-    `tf.Graphkeys.TRAINABLE_VARIABLES`, which doesn't include non-trainable
-    variables such as moving averages.
+    `tf.compat.v1.GraphKeys.TRAINABLE_VARIABLES`, which doesn't
+    include non-trainable variables such as moving averages.
 
 ##### Returns:
 
@@ -2288,7 +2336,7 @@ receivers or senders; the output graph has the same value in those fields as
 the input graph. Those fields can also have `None` values in the input
 `graphs.GraphsTuple`.
 
-#### [`modules.DeepSets.__init__(node_model_fn, global_model_fn, reducer=unsorted_segment_sum, name='deep_sets')`](https://github.com/deepmind/graph_nets/blob/master/graph_nets/modules.py?l=400)<!-- modules.DeepSets.__init__ .code-reference -->
+#### [`modules.DeepSets.__init__(node_model_fn, global_model_fn, reducer=<function unsorted_segment_sum>, name='deep_sets')`](https://github.com/deepmind/graph_nets/blob/master/graph_nets/modules.py?l=400)<!-- modules.DeepSets.__init__ .code-reference -->
 
 Initializes the DeepSets module.
 
@@ -2303,7 +2351,7 @@ Initializes the DeepSets module.
     return a Sonnet module (or equivalent; see GlobalBlock for details).
 * `reducer`: Reduction to be used when aggregating the nodes in the globals.
     This should be a callable whose signature matches
-    tf.unsorted_segment_sum.
+    tf.math.unsorted_segment_sum.
 * `name`: The module name.
 
 
@@ -2351,8 +2399,8 @@ information.
 
 
 * `collection`: Collection to restrict query to. By default this is
-    `tf.Graphkeys.TRAINABLE_VARIABLES`, which doesn't include non-trainable
-    variables such as moving averages.
+    `tf.compat.v1.GraphKeys.TRAINABLE_VARIABLES`, which doesn't
+    include non-trainable variables such as moving averages.
 
 ##### Returns:
 
@@ -2364,7 +2412,7 @@ information.
 * `NotConnectedError`: If the module is not connected to the Graph.
 
 
-#### [`modules.DeepSets.get_possible_initializer_keys(cls)`](https://github.com/deepmind/sonnet/blob/master/sonnet/python/modules/base.py)<!-- modules.DeepSets.get_possible_initializer_keys .code-reference -->
+#### [`modules.DeepSets.get_possible_initializer_keys()`](https://github.com/deepmind/sonnet/blob/master/sonnet/python/modules/base.py)<!-- modules.DeepSets.get_possible_initializer_keys .code-reference -->
 
 Returns the keys the dictionary of variable initializers may contain.
 
@@ -2394,8 +2442,8 @@ connected to.
 
 
 * `collection`: Collection to restrict query to. By default this is
-    `tf.Graphkeys.TRAINABLE_VARIABLES`, which doesn't include non-trainable
-    variables such as moving averages.
+    `tf.compat.v1.GraphKeys.TRAINABLE_VARIABLES`, which doesn't
+    include non-trainable variables such as moving averages.
 
 ##### Returns:
 
@@ -2599,8 +2647,8 @@ information.
 
 
 * `collection`: Collection to restrict query to. By default this is
-    `tf.Graphkeys.TRAINABLE_VARIABLES`, which doesn't include non-trainable
-    variables such as moving averages.
+    `tf.compat.v1.GraphKeys.TRAINABLE_VARIABLES`, which doesn't
+    include non-trainable variables such as moving averages.
 
 ##### Returns:
 
@@ -2612,7 +2660,7 @@ information.
 * `NotConnectedError`: If the module is not connected to the Graph.
 
 
-#### [`modules.GraphIndependent.get_possible_initializer_keys(cls)`](https://github.com/deepmind/sonnet/blob/master/sonnet/python/modules/base.py)<!-- modules.GraphIndependent.get_possible_initializer_keys .code-reference -->
+#### [`modules.GraphIndependent.get_possible_initializer_keys()`](https://github.com/deepmind/sonnet/blob/master/sonnet/python/modules/base.py)<!-- modules.GraphIndependent.get_possible_initializer_keys .code-reference -->
 
 Returns the keys the dictionary of variable initializers may contain.
 
@@ -2642,8 +2690,8 @@ connected to.
 
 
 * `collection`: Collection to restrict query to. By default this is
-    `tf.Graphkeys.TRAINABLE_VARIABLES`, which doesn't include non-trainable
-    variables such as moving averages.
+    `tf.compat.v1.GraphKeys.TRAINABLE_VARIABLES`, which doesn't
+    include non-trainable variables such as moving averages.
 
 ##### Returns:
 
@@ -2784,7 +2832,7 @@ Implementation of a Graph Network.
 
 See https://arxiv.org/abs/1806.01261 for more details.
 
-#### [`modules.GraphNetwork.__init__(edge_model_fn, node_model_fn, global_model_fn, reducer=unsorted_segment_sum, edge_block_opt=None, node_block_opt=None, global_block_opt=None, name='graph_network')`](https://github.com/deepmind/graph_nets/blob/master/graph_nets/modules.py?l=238)<!-- modules.GraphNetwork.__init__ .code-reference -->
+#### [`modules.GraphNetwork.__init__(edge_model_fn, node_model_fn, global_model_fn, reducer=<function unsorted_segment_sum>, edge_block_opt=None, node_block_opt=None, global_block_opt=None, name='graph_network')`](https://github.com/deepmind/graph_nets/blob/master/graph_nets/modules.py?l=238)<!-- modules.GraphNetwork.__init__ .code-reference -->
 
 Initializes the GraphNetwork module.
 
@@ -2801,15 +2849,15 @@ Initializes the GraphNetwork module.
     per-global computations. The callable must return a Sonnet module (or
     equivalent; see GlobalBlock for details).
 * `reducer`: Reducer to be used by NodeBlock and GlobalBlock to aggregate
-    nodes and edges. Defaults to tf.unsorted_segment_sum. This will be
+    nodes and edges. Defaults to tf.math.unsorted_segment_sum. This will be
     overridden by the reducers specified in `node_block_opt` and
     `global_block_opt`, if any.
 * `edge_block_opt`: Additional options to be passed to the EdgeBlock. Can
     contain keys `use_edges`, `use_receiver_nodes`, `use_sender_nodes`,
     `use_globals`. By default, these are all True.
 * `node_block_opt`: Additional options to be passed to the NodeBlock. Can
-    contain the keys `use_received_edges`, `use_sent_edges`, `use_nodes`,
-    `use_globals` (all set to True by default), and
+    contain the keys `use_received_edges`, `use_nodes`, `use_globals` (all
+    set to True by default), `use_sent_edges` (defaults to False), and
     `received_edges_reducer`, `sent_edges_reducer` (default to `reducer`).
 * `global_block_opt`: Additional options to be passed to the GlobalBlock. Can
     contain the keys `use_edges`, `use_nodes`, `use_globals` (all set to
@@ -2862,8 +2910,8 @@ information.
 
 
 * `collection`: Collection to restrict query to. By default this is
-    `tf.Graphkeys.TRAINABLE_VARIABLES`, which doesn't include non-trainable
-    variables such as moving averages.
+    `tf.compat.v1.GraphKeys.TRAINABLE_VARIABLES`, which doesn't
+    include non-trainable variables such as moving averages.
 
 ##### Returns:
 
@@ -2875,7 +2923,7 @@ information.
 * `NotConnectedError`: If the module is not connected to the Graph.
 
 
-#### [`modules.GraphNetwork.get_possible_initializer_keys(cls)`](https://github.com/deepmind/sonnet/blob/master/sonnet/python/modules/base.py)<!-- modules.GraphNetwork.get_possible_initializer_keys .code-reference -->
+#### [`modules.GraphNetwork.get_possible_initializer_keys()`](https://github.com/deepmind/sonnet/blob/master/sonnet/python/modules/base.py)<!-- modules.GraphNetwork.get_possible_initializer_keys .code-reference -->
 
 Returns the keys the dictionary of variable initializers may contain.
 
@@ -2905,8 +2953,8 @@ connected to.
 
 
 * `collection`: Collection to restrict query to. By default this is
-    `tf.Graphkeys.TRAINABLE_VARIABLES`, which doesn't include non-trainable
-    variables such as moving averages.
+    `tf.compat.v1.GraphKeys.TRAINABLE_VARIABLES`, which doesn't
+    include non-trainable variables such as moving averages.
 
 ##### Returns:
 
@@ -3053,7 +3101,7 @@ See https://arxiv.org/abs/1612.00222 for more details.
 This model does not update the graph globals, and they are allowed to be
 `None`.
 
-#### [`modules.InteractionNetwork.__init__(edge_model_fn, node_model_fn, reducer=unsorted_segment_sum, name='interaction_network')`](https://github.com/deepmind/graph_nets/blob/master/graph_nets/modules.py?l=91)<!-- modules.InteractionNetwork.__init__ .code-reference -->
+#### [`modules.InteractionNetwork.__init__(edge_model_fn, node_model_fn, reducer=<function unsorted_segment_sum>, name='interaction_network')`](https://github.com/deepmind/graph_nets/blob/master/graph_nets/modules.py?l=91)<!-- modules.InteractionNetwork.__init__ .code-reference -->
 
 Initializes the InteractionNetwork module.
 
@@ -3069,7 +3117,7 @@ Initializes the InteractionNetwork module.
     per-node computations. The callable must return a Sonnet module (or
     equivalent; see `blocks.NodeBlock` for details).
 * `reducer`: Reducer to be used by NodeBlock to aggregate edges. Defaults to
-    tf.unsorted_segment_sum.
+    tf.math.unsorted_segment_sum.
 * `name`: The module name.
 
 
@@ -3122,8 +3170,8 @@ information.
 
 
 * `collection`: Collection to restrict query to. By default this is
-    `tf.Graphkeys.TRAINABLE_VARIABLES`, which doesn't include non-trainable
-    variables such as moving averages.
+    `tf.compat.v1.GraphKeys.TRAINABLE_VARIABLES`, which doesn't
+    include non-trainable variables such as moving averages.
 
 ##### Returns:
 
@@ -3135,7 +3183,7 @@ information.
 * `NotConnectedError`: If the module is not connected to the Graph.
 
 
-#### [`modules.InteractionNetwork.get_possible_initializer_keys(cls)`](https://github.com/deepmind/sonnet/blob/master/sonnet/python/modules/base.py)<!-- modules.InteractionNetwork.get_possible_initializer_keys .code-reference -->
+#### [`modules.InteractionNetwork.get_possible_initializer_keys()`](https://github.com/deepmind/sonnet/blob/master/sonnet/python/modules/base.py)<!-- modules.InteractionNetwork.get_possible_initializer_keys .code-reference -->
 
 Returns the keys the dictionary of variable initializers may contain.
 
@@ -3165,8 +3213,8 @@ connected to.
 
 
 * `collection`: Collection to restrict query to. By default this is
-    `tf.Graphkeys.TRAINABLE_VARIABLES`, which doesn't include non-trainable
-    variables such as moving averages.
+    `tf.compat.v1.GraphKeys.TRAINABLE_VARIABLES`, which doesn't
+    include non-trainable variables such as moving averages.
 
 ##### Returns:
 
@@ -3311,7 +3359,7 @@ The global and edges features of the input graph are not used, and are
 allowed to be `None` (the receivers and senders properties must be present).
 The output graph has updated, non-`None`, globals.
 
-#### [`modules.RelationNetwork.__init__(edge_model_fn, global_model_fn, reducer=unsorted_segment_sum, name='relation_network')`](https://github.com/deepmind/graph_nets/blob/master/graph_nets/modules.py?l=151)<!-- modules.RelationNetwork.__init__ .code-reference -->
+#### [`modules.RelationNetwork.__init__(edge_model_fn, global_model_fn, reducer=<function unsorted_segment_sum>, name='relation_network')`](https://github.com/deepmind/graph_nets/blob/master/graph_nets/modules.py?l=151)<!-- modules.RelationNetwork.__init__ .code-reference -->
 
 Initializes the RelationNetwork module.
 
@@ -3325,7 +3373,7 @@ Initializes the RelationNetwork module.
     per-global computations. The callable must return a Sonnet module (or
     equivalent; see GlobalBlock for details).
 * `reducer`: Reducer to be used by GlobalBlock to aggregate edges. Defaults to
-    tf.unsorted_segment_sum.
+    tf.math.unsorted_segment_sum.
 * `name`: The module name.
 
 
@@ -3376,8 +3424,8 @@ information.
 
 
 * `collection`: Collection to restrict query to. By default this is
-    `tf.Graphkeys.TRAINABLE_VARIABLES`, which doesn't include non-trainable
-    variables such as moving averages.
+    `tf.compat.v1.GraphKeys.TRAINABLE_VARIABLES`, which doesn't
+    include non-trainable variables such as moving averages.
 
 ##### Returns:
 
@@ -3389,7 +3437,7 @@ information.
 * `NotConnectedError`: If the module is not connected to the Graph.
 
 
-#### [`modules.RelationNetwork.get_possible_initializer_keys(cls)`](https://github.com/deepmind/sonnet/blob/master/sonnet/python/modules/base.py)<!-- modules.RelationNetwork.get_possible_initializer_keys .code-reference -->
+#### [`modules.RelationNetwork.get_possible_initializer_keys()`](https://github.com/deepmind/sonnet/blob/master/sonnet/python/modules/base.py)<!-- modules.RelationNetwork.get_possible_initializer_keys .code-reference -->
 
 Returns the keys the dictionary of variable initializers may contain.
 
@@ -3419,8 +3467,8 @@ connected to.
 
 
 * `collection`: Collection to restrict query to. By default this is
-    `tf.Graphkeys.TRAINABLE_VARIABLES`, which doesn't include non-trainable
-    variables such as moving averages.
+    `tf.compat.v1.GraphKeys.TRAINABLE_VARIABLES`, which doesn't
+    include non-trainable variables such as moving averages.
 
 ##### Returns:
 
@@ -3581,7 +3629,7 @@ node value computed in a two step process:
 Values, keys and queries contain a "head" axis to compute independent
 self-attention for each of the heads.
 
-#### [`modules.SelfAttention.__init__(name='self_attention')`](https://github.com/deepmind/graph_nets/blob/master/graph_nets/modules.py?l=621)<!-- modules.SelfAttention.__init__ .code-reference -->
+#### [`modules.SelfAttention.__init__(name='self_attention')`](https://github.com/deepmind/graph_nets/blob/master/graph_nets/modules.py?l=622)<!-- modules.SelfAttention.__init__ .code-reference -->
 
 Inits the module.
 
@@ -3591,7 +3639,7 @@ Inits the module.
 * `name`: The module name.
 
 
-#### [`modules.SelfAttention.__call__(node_values, node_keys, node_queries, attention_graph)`](https://github.com/deepmind/graph_nets/blob/master/graph_nets/modules.py?l=630)<!-- modules.SelfAttention.__call__ .code-reference -->
+#### [`modules.SelfAttention.__call__(node_values, node_keys, node_queries, attention_graph)`](https://github.com/deepmind/graph_nets/blob/master/graph_nets/modules.py?l=631)<!-- modules.SelfAttention.__call__ .code-reference -->
 
 Connects the multi-head self-attention module.
 
@@ -3651,8 +3699,8 @@ information.
 
 
 * `collection`: Collection to restrict query to. By default this is
-    `tf.Graphkeys.TRAINABLE_VARIABLES`, which doesn't include non-trainable
-    variables such as moving averages.
+    `tf.compat.v1.GraphKeys.TRAINABLE_VARIABLES`, which doesn't
+    include non-trainable variables such as moving averages.
 
 ##### Returns:
 
@@ -3664,7 +3712,7 @@ information.
 * `NotConnectedError`: If the module is not connected to the Graph.
 
 
-#### [`modules.SelfAttention.get_possible_initializer_keys(cls)`](https://github.com/deepmind/sonnet/blob/master/sonnet/python/modules/base.py)<!-- modules.SelfAttention.get_possible_initializer_keys .code-reference -->
+#### [`modules.SelfAttention.get_possible_initializer_keys()`](https://github.com/deepmind/sonnet/blob/master/sonnet/python/modules/base.py)<!-- modules.SelfAttention.get_possible_initializer_keys .code-reference -->
 
 Returns the keys the dictionary of variable initializers may contain.
 
@@ -3694,8 +3742,8 @@ connected to.
 
 
 * `collection`: Collection to restrict query to. By default this is
-    `tf.Graphkeys.TRAINABLE_VARIABLES`, which doesn't include non-trainable
-    variables such as moving averages.
+    `tf.compat.v1.GraphKeys.TRAINABLE_VARIABLES`, which doesn't
+    include non-trainable variables such as moving averages.
 
 ##### Returns:
 
@@ -3830,7 +3878,7 @@ information about what variables are captured.
 
 
 
-### [`utils_np.data_dict_to_networkx(data_dict)`](https://github.com/deepmind/graph_nets/blob/master/graph_nets/utils_np.py?l=231)<!-- utils_np.data_dict_to_networkx .code-reference -->
+### [`utils_np.data_dict_to_networkx(data_dict)`](https://github.com/deepmind/graph_nets/blob/master/graph_nets/utils_np.py?l=246)<!-- utils_np.data_dict_to_networkx .code-reference -->
 
 Returns a networkx graph that contains the stored data.
 
@@ -3859,7 +3907,8 @@ the following properties:
 
 ##### Returns:
 
-  The `networkx.OrderedMultiDiGraph`.
+  The `networkx.OrderedMultiDiGraph`. The node keys will be the data_dict
+  integer node indices.
 
 ##### Raises:
 
@@ -3868,7 +3917,7 @@ the following properties:
     `data_dict` does not have a `N_NODE` field.
 
 
-### [`utils_np.data_dicts_to_graphs_tuple(data_dicts)`](https://github.com/deepmind/graph_nets/blob/master/graph_nets/utils_np.py?l=361)<!-- utils_np.data_dicts_to_graphs_tuple .code-reference -->
+### [`utils_np.data_dicts_to_graphs_tuple(data_dicts)`](https://github.com/deepmind/graph_nets/blob/master/graph_nets/utils_np.py?l=381)<!-- utils_np.data_dicts_to_graphs_tuple .code-reference -->
 
 Constructs a `graphs.GraphsTuple` from an iterable of data dicts.
 
@@ -3891,7 +3940,7 @@ single instance of `graphs.GraphsTuple` containing numpy arrays.
   type.
 
 
-### [`utils_np.get_graph(input_graphs, index)`](https://github.com/deepmind/graph_nets/blob/master/graph_nets/utils_np.py?l=522)<!-- utils_np.get_graph .code-reference -->
+### [`utils_np.get_graph(input_graphs, index)`](https://github.com/deepmind/graph_nets/blob/master/graph_nets/utils_np.py?l=542)<!-- utils_np.get_graph .code-reference -->
 
 Indexes into a graph.
 
@@ -3918,7 +3967,7 @@ graphs specified by the slice, and returns them into an another instance of a
 * `TypeError`: if `index` is not an `int` or a `slice`.
 
 
-### [`utils_np.graphs_tuple_to_data_dicts(graph)`](https://github.com/deepmind/graph_nets/blob/master/graph_nets/utils_np.py?l=388)<!-- utils_np.graphs_tuple_to_data_dicts .code-reference -->
+### [`utils_np.graphs_tuple_to_data_dicts(graph)`](https://github.com/deepmind/graph_nets/blob/master/graph_nets/utils_np.py?l=408)<!-- utils_np.graphs_tuple_to_data_dicts .code-reference -->
 
 Splits the stored data into a list of individual data dicts.
 
@@ -3937,7 +3986,7 @@ SENDERS.
     values). The NODES and EDGES fields have rank at least 2.
 
 
-### [`utils_np.graphs_tuple_to_networkxs(graphs_tuple)`](https://github.com/deepmind/graph_nets/blob/master/graph_nets/utils_np.py?l=347)<!-- utils_np.graphs_tuple_to_networkxs .code-reference -->
+### [`utils_np.graphs_tuple_to_networkxs(graphs_tuple)`](https://github.com/deepmind/graph_nets/blob/master/graph_nets/utils_np.py?l=366)<!-- utils_np.graphs_tuple_to_networkxs .code-reference -->
 
 Converts a `graphs.GraphsTuple` to a sequence of networkx graphs.
 
@@ -3948,10 +3997,11 @@ Converts a `graphs.GraphsTuple` to a sequence of networkx graphs.
 
 ##### Returns:
 
-  The list of `networkx.OrderedMultiDiGraph`s.
+  The list of `networkx.OrderedMultiDiGraph`s. The node keys will be the data
+  dict integer node indices.
 
 
-### [`utils_np.networkx_to_data_dict(graph_nx, node_shape_hint=None, edge_shape_hint=None, data_type_hint=float32)`](https://github.com/deepmind/graph_nets/blob/master/graph_nets/utils_np.py?l=107)<!-- utils_np.networkx_to_data_dict .code-reference -->
+### [`utils_np.networkx_to_data_dict(graph_nx, node_shape_hint=None, edge_shape_hint=None, data_type_hint=<class 'numpy.float32'>)`](https://github.com/deepmind/graph_nets/blob/master/graph_nets/utils_np.py?l=118)<!-- utils_np.networkx_to_data_dict .code-reference -->
 
 Returns a data dict of Numpy data from a networkx graph.
 
@@ -3976,7 +4026,9 @@ for missing values.
 ##### Args:
 
 
-* `graph_nx`: A `networkx.OrderedMultiDiGraph`.
+* `graph_nx`: A `networkx.OrderedMultiDiGraph`. The node keys must be sequential
+    integer values following the order in which nodes are added to the graph
+    starting from zero. That is `list(graph_nx.nodes)[i] == i`.
 * `node_shape_hint`: (iterable of `int` or `None`, default=`None`) If the graph
     does not contain nodes, the trailing shape for the created `NODES` field.
     If `None` (the default), this field is left `None`. This is not used if
@@ -4004,9 +4056,11 @@ for missing values.
     attribute; or if `graph_nx` contains at least one edge with a `None`
     "features" attribute and one least one edge with a non-`None` "features"
     attribute.
+* `ValueError`: If the nodes have keys that are not consistent with the order
+    of the nodes.
 
 
-### [`utils_np.networkxs_to_graphs_tuple(graph_nxs, node_shape_hint=None, edge_shape_hint=None, data_type_hint=float32)`](https://github.com/deepmind/graph_nets/blob/master/graph_nets/utils_np.py?l=295)<!-- utils_np.networkxs_to_graphs_tuple .code-reference -->
+### [`utils_np.networkxs_to_graphs_tuple(graph_nxs, node_shape_hint=None, edge_shape_hint=None, data_type_hint=<class 'numpy.float32'>)`](https://github.com/deepmind/graph_nets/blob/master/graph_nets/utils_np.py?l=311)<!-- utils_np.networkxs_to_graphs_tuple .code-reference -->
 
 Constructs an instance from an iterable of networkx graphs.
 
@@ -4028,7 +4082,10 @@ Constructs an instance from an iterable of networkx graphs.
 ##### Args:
 
 
-* `graph_nxs`: A container of `networkx.OrderedMultiDiGraph`s.
+* `graph_nxs`: A container of `networkx.OrderedMultiDiGraph`s. The node keys
+    must be sequential integer values following the order in which nodes are
+    added to the graph starting from zero. That is
+    `list(graph_nx.nodes)[i] == i`.
 * `node_shape_hint`: (iterable of `int` or `None`, default=`None`) If the graph
     does not contain nodes, the trailing shape for the created `NODES` field.
     If `None` (the default), this field is left `None`. This is not used if
@@ -4083,7 +4140,7 @@ corresponding fields is not `None`.
     in `input_graphs` are not the same for all the graphs.
 
 
-### [`utils_tf.data_dicts_to_graphs_tuple(data_dicts, name='data_dicts_to_graphs_tuple')`](https://github.com/deepmind/graph_nets/blob/master/graph_nets/utils_tf.py?l=925)<!-- utils_tf.data_dicts_to_graphs_tuple .code-reference -->
+### [`utils_tf.data_dicts_to_graphs_tuple(data_dicts, name='data_dicts_to_graphs_tuple')`](https://github.com/deepmind/graph_nets/blob/master/graph_nets/utils_tf.py?l=910)<!-- utils_tf.data_dicts_to_graphs_tuple .code-reference -->
 
 Creates a `graphs.GraphsTuple` containing tensors from data dicts.
 
@@ -4110,7 +4167,7 @@ Creates a `graphs.GraphsTuple` containing tensors from data dicts.
   A `graphs.GraphTuple` representing the graphs in `data_dicts`.
 
 
-### [`utils_tf.fully_connect_graph_dynamic(graph, exclude_self_edges=False, name='fully_connect_graph_dynamic')`](https://github.com/deepmind/graph_nets/blob/master/graph_nets/utils_tf.py?l=769)<!-- utils_tf.fully_connect_graph_dynamic .code-reference -->
+### [`utils_tf.fully_connect_graph_dynamic(graph, exclude_self_edges=False, name='fully_connect_graph_dynamic')`](https://github.com/deepmind/graph_nets/blob/master/graph_nets/utils_tf.py?l=754)<!-- utils_tf.fully_connect_graph_dynamic .code-reference -->
 
 Adds edges to a graph by fully-connecting the nodes.
 
@@ -4137,7 +4194,7 @@ or to be known at graph building time.
     `None` in `graph`.
 
 
-### [`utils_tf.fully_connect_graph_static(graph, exclude_self_edges=False, name='fully_connect_graph_static')`](https://github.com/deepmind/graph_nets/blob/master/graph_nets/utils_tf.py?l=701)<!-- utils_tf.fully_connect_graph_static .code-reference -->
+### [`utils_tf.fully_connect_graph_static(graph, exclude_self_edges=False, name='fully_connect_graph_static')`](https://github.com/deepmind/graph_nets/blob/master/graph_nets/utils_tf.py?l=686)<!-- utils_tf.fully_connect_graph_static .code-reference -->
 
 Adds edges to a graph by fully-connecting the nodes.
 
@@ -4211,7 +4268,7 @@ restoring the correct behavior.
     match.
 
 
-### [`utils_tf.get_graph(input_graphs, index, name='get_graph')`](https://github.com/deepmind/graph_nets/blob/master/graph_nets/utils_tf.py?l=980)<!-- utils_tf.get_graph .code-reference -->
+### [`utils_tf.get_graph(input_graphs, index, name='get_graph')`](https://github.com/deepmind/graph_nets/blob/master/graph_nets/utils_tf.py?l=965)<!-- utils_tf.get_graph .code-reference -->
 
 Indexes into a graph.
 
@@ -4242,7 +4299,7 @@ graphs specified by the slice, and returns them into an another instance of a
 * `ValueError`: if `index` is a slice and `index.step` if not None.
 
 
-### [`utils_tf.get_num_graphs(input_graphs, name='get_num_graphs')`](https://github.com/deepmind/graph_nets/blob/master/graph_nets/utils_tf.py?l=1061)<!-- utils_tf.get_num_graphs .code-reference -->
+### [`utils_tf.get_num_graphs(input_graphs, name='get_num_graphs')`](https://github.com/deepmind/graph_nets/blob/master/graph_nets/utils_tf.py?l=1046)<!-- utils_tf.get_num_graphs .code-reference -->
 
 Returns the number of graphs (i.e. the batch size) in `input_graphs`.
 
@@ -4384,7 +4441,7 @@ Equivalent to Numpy's `np.repeat`.
   The `tf.Tensor` with repeated values.
 
 
-### [`utils_tf.set_zero_edge_features(graph, edge_size, dtype=tf.float32, name='set_zero_edge_features')`](https://github.com/deepmind/graph_nets/blob/master/graph_nets/utils_tf.py?l=858)<!-- utils_tf.set_zero_edge_features .code-reference -->
+### [`utils_tf.set_zero_edge_features(graph, edge_size, dtype=tf.float32, name='set_zero_edge_features')`](https://github.com/deepmind/graph_nets/blob/master/graph_nets/utils_tf.py?l=843)<!-- utils_tf.set_zero_edge_features .code-reference -->
 
 Completes the edge state of a graph.
 
@@ -4410,7 +4467,7 @@ Completes the edge state of a graph.
 * `ValueError`: If `edge_size` is None.
 
 
-### [`utils_tf.set_zero_global_features(graph, global_size, dtype=tf.float32, name='set_zero_global_features')`](https://github.com/deepmind/graph_nets/blob/master/graph_nets/utils_tf.py?l=894)<!-- utils_tf.set_zero_global_features .code-reference -->
+### [`utils_tf.set_zero_global_features(graph, global_size, dtype=tf.float32, name='set_zero_global_features')`](https://github.com/deepmind/graph_nets/blob/master/graph_nets/utils_tf.py?l=879)<!-- utils_tf.set_zero_global_features .code-reference -->
 
 Completes the global state of a graph.
 
@@ -4434,7 +4491,7 @@ Completes the global state of a graph.
 * `ValueError`: If `global_size` is not `None`.
 
 
-### [`utils_tf.set_zero_node_features(graph, node_size, dtype=tf.float32, name='set_zero_node_features')`](https://github.com/deepmind/graph_nets/blob/master/graph_nets/utils_tf.py?l=826)<!-- utils_tf.set_zero_node_features .code-reference -->
+### [`utils_tf.set_zero_node_features(graph, node_size, dtype=tf.float32, name='set_zero_node_features')`](https://github.com/deepmind/graph_nets/blob/master/graph_nets/utils_tf.py?l=811)<!-- utils_tf.set_zero_node_features .code-reference -->
 
 Completes the node state of a graph.
 

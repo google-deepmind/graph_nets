@@ -32,14 +32,18 @@ install Tensorflow separately if you haven't already done so.
 To install the Graph Nets library for CPU, run:
 
 ```shell
-$ pip install graph_nets tensorflow tensorflow_probability
+$ pip install graph_nets "tensorflow>=1.15,<2" tensorflow_probability
 ```
 
 To install the Graph Nets library for GPU, run:
 
 ```shell
-$ pip install graph_nets tensorflow_gpu tensorflow_probability
+$ pip install graph_nets "tensorflow_gpu>=1.15,<2" tensorflow_probability
 ```
+
+The latest version of the library is compatible with TensorFlow 1 (version 1.15
+and above). For compatibility with earlier versions of TensorFlow, please
+install v1.0.4 of the GraphNets library.
 
 ## Usage example
 

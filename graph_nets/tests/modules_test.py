@@ -77,6 +77,11 @@ class GraphModuleTest(tf.test.TestCase, parameterized.TestCase):
     super(GraphModuleTest, self).setUp()
     tf.set_random_seed(0)
 
+  def _assert_all_none_or_all_close(self, expected, actual, *args, **kwargs):
+    if expected is None:
+      return self.assertAllEqual(expected, actual)
+    return self.assertAllClose(expected, actual, *args, **kwargs)
+
   def _get_input_graph(self, none_field=None):
     input_graph = utils_tf.data_dicts_to_graphs_tuple(
         [SMALL_GRAPH_1, SMALL_GRAPH_2, SMALL_GRAPH_3, SMALL_GRAPH_4])
@@ -144,9 +149,12 @@ class GraphIndependentTest(GraphModuleTest):
             expected_output_nodes,
             expected_output_globals))
 
-    self.assertAllEqual(expected_edges_out, output_graph_out.edges)
-    self.assertAllEqual(expected_nodes_out, output_graph_out.nodes)
-    self.assertAllEqual(expected_globals_out, output_graph_out.globals)
+    self._assert_all_none_or_all_close(expected_edges_out,
+                                       output_graph_out.edges)
+    self._assert_all_none_or_all_close(expected_nodes_out,
+                                       output_graph_out.nodes)
+    self._assert_all_none_or_all_close(expected_globals_out,
+                                       output_graph_out.globals)
 
   @parameterized.named_parameters(
       ("default name", None), ("custom name", "custom_name"))
@@ -294,9 +302,12 @@ class GraphNetworkTest(GraphModuleTest):
        expected_edges_out, expected_nodes_out, expected_globals_out) = sess.run(
            (output_graph, expected_edges, expected_nodes, expected_globals))
 
-    self.assertAllEqual(expected_edges_out, output_graph_out.edges)
-    self.assertAllEqual(expected_nodes_out, output_graph_out.nodes)
-    self.assertAllEqual(expected_globals_out, output_graph_out.globals)
+    self._assert_all_none_or_all_close(expected_edges_out,
+                                       output_graph_out.edges)
+    self._assert_all_none_or_all_close(expected_nodes_out,
+                                       output_graph_out.nodes)
+    self._assert_all_none_or_all_close(expected_globals_out,
+                                       output_graph_out.globals)
 
   def test_dynamic_batch_sizes(self):
     """Checks that all batch sizes are as expected through a GraphNetwork."""
@@ -390,9 +401,12 @@ class GraphNetworkTest(GraphModuleTest):
        expected_edges_out, expected_nodes_out, expected_globals_out) = sess.run(
            (output_graph, expected_edges, expected_nodes, expected_globals))
 
-    self.assertAllEqual(expected_edges_out, output_graph_out.edges)
-    self.assertAllEqual(expected_nodes_out, output_graph_out.nodes)
-    self.assertAllEqual(expected_globals_out, output_graph_out.globals)
+    self._assert_all_none_or_all_close(expected_edges_out,
+                                       output_graph_out.edges)
+    self._assert_all_none_or_all_close(expected_nodes_out,
+                                       output_graph_out.nodes)
+    self._assert_all_none_or_all_close(expected_globals_out,
+                                       output_graph_out.globals)
 
   @parameterized.named_parameters(
       ("received edges only", True, False, False, False, None, None),
@@ -470,9 +484,12 @@ class GraphNetworkTest(GraphModuleTest):
        expected_edges_out, expected_nodes_out, expected_globals_out) = sess.run(
            (output_graph, expected_edges, expected_nodes, expected_globals))
 
-    self.assertAllEqual(expected_edges_out, output_graph_out.edges)
-    self.assertAllEqual(expected_nodes_out, output_graph_out.nodes)
-    self.assertAllEqual(expected_globals_out, output_graph_out.globals)
+    self._assert_all_none_or_all_close(expected_edges_out,
+                                       output_graph_out.edges)
+    self._assert_all_none_or_all_close(expected_nodes_out,
+                                       output_graph_out.nodes)
+    self._assert_all_none_or_all_close(expected_globals_out,
+                                       output_graph_out.globals)
 
   @parameterized.named_parameters(
       ("edges only", True, False, False, None, None),
@@ -501,7 +518,7 @@ class GraphNetworkTest(GraphModuleTest):
                       "use_receiver_nodes": False,
                       "use_sender_nodes": False,
                       "use_globals": False}
-     # Identity node model
+    # Identity node model
     node_model_fn = lambda: tf.identity
     node_block_opt = {"use_received_edges": False,
                       "use_sent_edges": False,
@@ -545,9 +562,12 @@ class GraphNetworkTest(GraphModuleTest):
        expected_edges_out, expected_nodes_out, expected_globals_out) = sess.run(
            (output_graph, expected_edges, expected_nodes, expected_globals))
 
-    self.assertAllEqual(expected_edges_out, output_graph_out.edges)
-    self.assertAllEqual(expected_nodes_out, output_graph_out.nodes)
-    self.assertAllEqual(expected_globals_out, output_graph_out.globals)
+    self._assert_all_none_or_all_close(expected_edges_out,
+                                       output_graph_out.edges)
+    self._assert_all_none_or_all_close(expected_nodes_out,
+                                       output_graph_out.nodes)
+    self._assert_all_none_or_all_close(expected_globals_out,
+                                       output_graph_out.globals)
 
   def test_higher_rank_outputs(self):
     """Tests that a graph net can be build with higher rank inputs/outputs."""
@@ -666,8 +686,8 @@ class InteractionNetworkTest(GraphModuleTest):
        expected_edges_out, expected_nodes_out) = sess.run(
            [edges_out, nodes_out, expected_edges, expected_nodes])
 
-    self.assertAllEqual(expected_edges_out, actual_edges_out)
-    self.assertAllEqual(expected_nodes_out, actual_nodes_out)
+    self._assert_all_none_or_all_close(expected_edges_out, actual_edges_out)
+    self._assert_all_none_or_all_close(expected_nodes_out, actual_nodes_out)
 
   @parameterized.named_parameters(
       ("no nodes", ["nodes"],),
@@ -787,7 +807,7 @@ class RelationNetworkTest(GraphModuleTest):
       (actual_globals_out, expected_globals_out) = sess.run(
           (output_graph.globals, expected_output_global_block.globals))
 
-    self.assertAllEqual(expected_globals_out, actual_globals_out)
+    self._assert_all_none_or_all_close(expected_globals_out, actual_globals_out)
 
   @parameterized.named_parameters(
       ("no nodes", ["nodes"],), ("no edges", ["edges", "receivers", "senders"],)
@@ -896,8 +916,8 @@ class DeepSetsTest(GraphModuleTest):
        expected_globals_) = sess.run(
            [output_nodes, output_globals, expected_nodes, expected_globals])
 
-    self.assertAllEqual(expected_nodes_, output_nodes_)
-    self.assertAllEqual(expected_globals_, output_globals_)
+    self._assert_all_none_or_all_close(expected_nodes_, output_nodes_)
+    self._assert_all_none_or_all_close(expected_globals_, output_globals_)
 
   @parameterized.parameters(
       ("nodes",), ("globals",),
@@ -1033,7 +1053,8 @@ class CommNetTest(GraphModuleTest):
       actual_nodes_output, expected_nodes_output = sess.run(
           [output_nodes, expected_nodes])
 
-    self.assertAllEqual(expected_nodes_output, actual_nodes_output)
+    self._assert_all_none_or_all_close(expected_nodes_output,
+                                       actual_nodes_output)
 
   @parameterized.named_parameters(
       ("no nodes", ["nodes"],), ("no edges", ["edges", "receivers", "senders"],)

@@ -107,7 +107,6 @@ from __future__ import print_function
 
 import collections
 
-
 NODES = "nodes"
 EDGES = "edges"
 RECEIVERS = "receivers"

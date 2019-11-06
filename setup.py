@@ -27,7 +27,7 @@ Tensorflow and Sonnet.
 
 setup(
     name="graph_nets",
-    version="1.0.5.dev",
+    version="1.0.6.dev",
     description="Library for building graph networks in Tensorflow and Sonnet.",
     long_description=description,
     author="DeepMind",
@@ -35,6 +35,8 @@ setup(
     keywords=["graph networks", "tensorflow", "sonnet", "machine learning"],
     url="https://github.com/deepmind/graph-nets",
     packages=find_packages(),
+    # Additional "tensorflow" and "tensorflow_probability" requirements should
+    # be installed separately (See README).
     install_requires=[
         "absl-py",
         "dm-sonnet<2",
