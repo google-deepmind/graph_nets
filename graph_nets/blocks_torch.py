@@ -37,7 +37,7 @@ from graph_nets import graphs
 from graph_nets import utils_tf
 import torch
 import torch.nn as nn
-from torch_scatter import scatter_mean, scatter_add # etc.
+from torch_scatter import scatter_add, scatter_mult, scatter_mean, scatter_max, scatter_min
 
 
 NODES = graphs.NODES
@@ -184,14 +184,14 @@ class EdgesToGlobalsAggregator(nn.Module):
   def forward(self, graph):
     _validate_graph(graph, (EDGES,),
                     additional_message="when aggregating from edges.")
-    num_graphs = graph.shape[0] # TODO: Check w/ tests, might be missing a .n_nodes
+    num_graphs = graph.n_node.shape[0] # TODO: Check w/ tests
     graph_index = torch.range(num_graphs)
     indices = repeat_interleave(graph_index, graph.n_edge, dim=0)
-    return self._reducer(graph.edges, indices, num_graphs) # TODO: This call is probably wrong
+    # TODO: indices might require casting
+    return self._reducer(graph.edges, indices, dim_size=num_graphs) # TODO: This call is probably wrong
 
-# WIP
 
-class NodesToGlobalsAggregator(snt.AbstractModule):
+class NodesToGlobalsAggregator(nn.Module):
   """Aggregates all nodes into globals."""
 
   def __init__(self, reducer, name="nodes_to_globals_aggregator"):
@@ -218,16 +218,18 @@ class NodesToGlobalsAggregator(snt.AbstractModule):
     super(NodesToGlobalsAggregator, self).__init__(name=name)
     self._reducer = reducer
 
-  def _build(self, graph):
+  def forward(self, graph):
     _validate_graph(graph, (NODES,),
                     additional_message="when aggregating from nodes.")
-    num_graphs = utils_tf.get_num_graphs(graph)
-    graph_index = tf.range(num_graphs)
-    indices = utils_tf.repeat(graph_index, graph.n_node, axis=0)
-    return self._reducer(graph.nodes, indices, num_graphs)
+    num_graphs = graph.n_node.shape[0] # TODO: Check w/ tests
+
+    graph_index = torch.range(num_graphs)
+    indices = repeat_interleave(graph_index, graph.n_node, dim=0)
+
+    return self._reducer(graph.nodes, indices, dim_size=num_graphs)
 
 
-class _EdgesToNodesAggregator(snt.AbstractModule):
+class _EdgesToNodesAggregator(nn.Module):
   """Agregates sent or received edges into the corresponding nodes."""
 
   def __init__(self, reducer, use_sent_edges=False,
@@ -236,12 +238,12 @@ class _EdgesToNodesAggregator(snt.AbstractModule):
     self._reducer = reducer
     self._use_sent_edges = use_sent_edges
 
-  def _build(self, graph):
+  def forward(self, graph):
     _validate_graph(graph, (EDGES, SENDERS, RECEIVERS,),
                     additional_message="when aggregating from edges.")
-    num_nodes = tf.reduce_sum(graph.n_node)
+    num_nodes = torch.sum(graph.n_node)
     indices = graph.senders if self._use_sent_edges else graph.receivers
-    return self._reducer(graph.edges, indices, num_nodes)
+    return self._reducer(graph.edges, indices, dim_size=num_nodes)
 
 
 class SentEdgesToNodesAggregator(_EdgesToNodesAggregator):
@@ -304,12 +306,12 @@ class ReceivedEdgesToNodesAggregator(_EdgesToNodesAggregator):
 
 def _unsorted_segment_reduction_or_zero(reducer, values, indices, num_groups):
   """Common code for unsorted_segment_{min,max}_or_zero (below)."""
-  reduced = reducer(values, indices, num_groups)
-  present_indices = tf.unsorted_segment_max(
-      tf.ones_like(indices, dtype=reduced.dtype), indices, num_groups)
-  present_indices = tf.clip_by_value(present_indices, 0, 1)
-  present_indices = tf.reshape(
-      present_indices, [num_groups] + [1] * (reduced.shape.ndims - 1))
+  reduced = reducer(values, indices, dim_size=num_groups) # TODO: Need a case for max and min (argmin/argmax return)
+  present_indices = scatter_max(torch.ones(indices.shape, dtype=reduced.dtype),
+      indices, dim_size=num_groups)
+  present_indices = torch.clamp(present_indices, 0, 1)
+  present_indices = torch.reshape(
+      present_indices, [num_groups] + [1] * (reduced.shape.ndims - 1)) # TODO: Recheck shape
   reduced *= present_indices
   return reduced
 
@@ -331,9 +333,8 @@ def unsorted_segment_min_or_zero(values, indices, num_groups,
   Returns:
     A `Tensor` of the same type as `values`.
   """
-  with tf.name_scope(name):
-    return _unsorted_segment_reduction_or_zero(
-        tf.unsorted_segment_min, values, indices, num_groups)
+  return _unsorted_segment_reduction_or_zero(
+      scatter_min, values, indices, num_groups)
 
 
 def unsorted_segment_max_or_zero(values, indices, num_groups,
@@ -353,10 +354,10 @@ def unsorted_segment_max_or_zero(values, indices, num_groups,
   Returns:
     A `Tensor` of the same type as `values`.
   """
-  with tf.name_scope(name):
-    return _unsorted_segment_reduction_or_zero(
-        tf.unsorted_segment_max, values, indices, num_groups)
+  return _unsorted_segment_reduction_or_zero(
+      scatter_max, values, indices, num_groups)
 
+#WIP
 
 class EdgeBlock(snt.AbstractModule):
   """Edge block.
