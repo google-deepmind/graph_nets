@@ -357,9 +357,8 @@ def unsorted_segment_max_or_zero(values, indices, num_groups,
   return _unsorted_segment_reduction_or_zero(
       scatter_max, values, indices, num_groups)
 
-#WIP
 
-class EdgeBlock(snt.AbstractModule):
+class EdgeBlock(nn.Module):
   """Edge block.
 
   A block that updates the features of each edge in a batch of graphs based on
@@ -410,8 +409,7 @@ class EdgeBlock(snt.AbstractModule):
     self._use_sender_nodes = use_sender_nodes
     self._use_globals = use_globals
 
-    with self._enter_variable_scope():
-      self._edge_model = edge_model_fn()
+    self._edge_model = edge_model_fn()
 
   def _build(self, graph):
     """Connects the edge block.
@@ -448,13 +446,12 @@ class EdgeBlock(snt.AbstractModule):
 
     if self._use_globals:
       edges_to_collect.append(broadcast_globals_to_edges(graph))
-
-    collected_edges = tf.concat(edges_to_collect, axis=-1)
+    collected_edges = torch.cat(edges_to_collect, dim=0) # TODO: Recheck dim, might be wrong
     updated_edges = self._edge_model(collected_edges)
     return graph.replace(edges=updated_edges)
 
 
-class NodeBlock(snt.AbstractModule):
+class NodeBlock(nn.Module):
   """Node block.
 
   A block that updates the features of each node in batch of graphs based on
@@ -470,8 +467,8 @@ class NodeBlock(snt.AbstractModule):
                use_sent_edges=False,
                use_nodes=True,
                use_globals=True,
-               received_edges_reducer=tf.unsorted_segment_sum,
-               sent_edges_reducer=tf.unsorted_segment_sum,
+               received_edges_reducer=scatter_add,
+               sent_edges_reducer=scatter_add,
                name="node_block"):
     """Initializes the NodeBlock module.
 
@@ -559,12 +556,12 @@ class NodeBlock(snt.AbstractModule):
     if self._use_globals:
       nodes_to_collect.append(broadcast_globals_to_nodes(graph))
 
-    collected_nodes = tf.concat(nodes_to_collect, axis=-1)
+    collected_nodes = torch.cat(nodes_to_collect, dim=0) # TODO: Same as above
     updated_nodes = self._node_model(collected_nodes)
     return graph.replace(nodes=updated_nodes)
 
 
-class GlobalBlock(snt.AbstractModule):
+class GlobalBlock(nn.Module):
   """Global block.
 
   A block that updates the global features of each graph in a batch based on
@@ -658,6 +655,6 @@ class GlobalBlock(snt.AbstractModule):
       _validate_graph(graph, (GLOBALS,), "when use_globals == True")
       globals_to_collect.append(graph.globals)
 
-    collected_globals = tf.concat(globals_to_collect, axis=-1)
+    collected_globals = torch.cat(globals_to_collect, dim=0)
     updated_globals = self._global_model(collected_globals)
     return graph.replace(globals=updated_globals)
