@@ -37,7 +37,7 @@ from graph_nets import graphs
 from graph_nets import utils_tf
 import torch
 import torch.nn as nn
-from torch_scatter import scatter_add, scatter_mult, scatter_mean, scatter_max, scatter_min
+from torch_scatter import scatter_add, scatter_mul, scatter_mean, scatter_max, scatter_min
 
 
 NODES = graphs.NODES
@@ -85,7 +85,7 @@ def broadcast_globals_to_edges(graph, name="broadcast_globals_to_edges"):
     ValueError: If either `graph.globals` or `graph.n_edge` is `None`.
   """
   _validate_broadcasted_graph(graph, GLOBALS, N_EDGE)
-  return torch.repeat_interleave(graph_globals, graph.n_edge, dim=0)
+  return torch.repeat_interleave(graph.globals, graph.n_edge, dim=0)
 
 
 def broadcast_globals_to_nodes(graph, name="broadcast_globals_to_nodes"):
@@ -186,7 +186,7 @@ class EdgesToGlobalsAggregator(nn.Module):
                     additional_message="when aggregating from edges.")
     num_graphs = graph.n_node.shape[0] # TODO: Check w/ tests
     graph_index = torch.range(num_graphs)
-    indices = repeat_interleave(graph_index, graph.n_edge, dim=0)
+    indices = torch.repeat_interleave(graph_index, graph.n_edge, dim=0)
     # TODO: indices might require casting
     return self._reducer(graph.edges, indices, dim_size=num_graphs) # TODO: This call is probably wrong
 
@@ -224,7 +224,7 @@ class NodesToGlobalsAggregator(nn.Module):
     num_graphs = graph.n_node.shape[0] # TODO: Check w/ tests
 
     graph_index = torch.range(num_graphs)
-    indices = repeat_interleave(graph_index, graph.n_node, dim=0)
+    indices = torch.repeat_interleave(graph_index, graph.n_node, dim=0)
 
     return self._reducer(graph.nodes, indices, dim_size=num_graphs)
 
