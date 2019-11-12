@@ -1065,4 +1065,4 @@ class CommonBlockTests(GraphModuleTest):
 
 
 if __name__ == "__main__":
-    tf.test.main()
+    unittest.main()
