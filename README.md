@@ -148,7 +148,7 @@ If you use PyTorch, check out these high-quality open-source libraries for
 graph neural networks:
 
 * [pytorch_geometric](https://github.com/rusty1s/pytorch_geometric): See
-[MetaLayer](https://rusty1s.github.io/pytorch_geometric/build/html/modules/nn.html#torch_geometric.nn.meta.MetaLayer)
+[MetaLayer](https://pytorch-geometric.readthedocs.io/en/latest/modules/nn.html#torch_geometric.nn.meta.MetaLayer)
 for an analog of our Graph Nets interface.
 
 * [Deep Graph Library (DGL)](https://github.com/dmlc/dgl)
