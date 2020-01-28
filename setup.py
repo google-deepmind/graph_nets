@@ -39,7 +39,8 @@ setup(
     # be installed separately (See README).
     install_requires=[
         "absl-py",
-        "dm-sonnet<2",
+        "dm-sonnet",
+        "dm-tree",
         "future",
         "networkx",
         "numpy",

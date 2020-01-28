@@ -50,8 +50,8 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
+from graph_nets import _base
 from graph_nets import blocks
-import sonnet as snt
 import tensorflow as tf
 
 _DEFAULT_EDGE_BLOCK_OPT = {
@@ -75,7 +75,7 @@ _DEFAULT_GLOBAL_BLOCK_OPT = {
 }
 
 
-class InteractionNetwork(snt.AbstractModule):
+class InteractionNetwork(_base.AbstractModule):
   """Implementation of an Interaction Network.
 
   An interaction networks computes interactions on the edges based on the
@@ -137,7 +137,7 @@ class InteractionNetwork(snt.AbstractModule):
     return self._node_block(self._edge_block(graph))
 
 
-class RelationNetwork(snt.AbstractModule):
+class RelationNetwork(_base.AbstractModule):
   """Implementation of a Relation Network.
 
   See https://arxiv.org/abs/1706.01427 for more details.
@@ -228,7 +228,7 @@ def _make_default_global_block_opt(global_block_opt, default_reducer):
   return global_block_opt
 
 
-class GraphNetwork(snt.AbstractModule):
+class GraphNetwork(_base.AbstractModule):
   """Implementation of a Graph Network.
 
   See https://arxiv.org/abs/1806.01261 for more details.
@@ -301,7 +301,7 @@ class GraphNetwork(snt.AbstractModule):
     return self._global_block(self._node_block(self._edge_block(graph)))
 
 
-class GraphIndependent(snt.AbstractModule):
+class GraphIndependent(_base.AbstractModule):
   """A graph block that applies models to the graph elements independently.
 
   The inputs and outputs are graphs. The corresponding models are applied to
@@ -338,18 +338,18 @@ class GraphIndependent(snt.AbstractModule):
       if edge_model_fn is None:
         self._edge_model = lambda x: x
       else:
-        self._edge_model = snt.Module(
-            lambda x: edge_model_fn()(x), name="edge_model")  # pylint: disable=unnecessary-lambda
+        self._edge_model = _base.WrappedModelFnModule(
+            edge_model_fn, name="edge_model")
       if node_model_fn is None:
         self._node_model = lambda x: x
       else:
-        self._node_model = snt.Module(
-            lambda x: node_model_fn()(x), name="node_model")  # pylint: disable=unnecessary-lambda
+        self._node_model = _base.WrappedModelFnModule(
+            node_model_fn, name="node_model")
       if global_model_fn is None:
         self._global_model = lambda x: x
       else:
-        self._global_model = snt.Module(
-            lambda x: global_model_fn()(x), name="global_model")  # pylint: disable=unnecessary-lambda
+        self._global_model = _base.WrappedModelFnModule(
+            global_model_fn, name="global_model")
 
   def _build(self, graph):
     """Connects the GraphIndependent.
@@ -368,7 +368,7 @@ class GraphIndependent(snt.AbstractModule):
         globals=self._global_model(graph.globals))
 
 
-class DeepSets(snt.AbstractModule):
+class DeepSets(_base.AbstractModule):
   """DeepSets module.
 
   Implementation for the model described in https://arxiv.org/abs/1703.06114
@@ -447,7 +447,7 @@ class DeepSets(snt.AbstractModule):
     return self._global_block(self._node_block(graph))
 
 
-class CommNet(snt.AbstractModule):
+class CommNet(_base.AbstractModule):
   """CommNet module.
 
   Implementation for the model originally described in
@@ -591,7 +591,7 @@ def _received_edges_normalizer(graph,
         num_segments=tf.reduce_sum(graph.n_node))
 
 
-class SelfAttention(snt.AbstractModule):
+class SelfAttention(_base.AbstractModule):
   """Multi-head self-attention module.
 
   The module is based on the following three papers:

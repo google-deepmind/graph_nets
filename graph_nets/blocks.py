@@ -32,10 +32,10 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
-
+from graph_nets import _base
 from graph_nets import graphs
 from graph_nets import utils_tf
-import sonnet as snt
+
 import tensorflow as tf
 
 
@@ -157,7 +157,7 @@ def broadcast_receiver_nodes_to_edges(
     return tf.gather(graph.nodes, graph.receivers)
 
 
-class EdgesToGlobalsAggregator(snt.AbstractModule):
+class EdgesToGlobalsAggregator(_base.AbstractModule):
   """Aggregates all edges into globals."""
 
   def __init__(self, reducer, name="edges_to_globals_aggregator"):
@@ -193,7 +193,7 @@ class EdgesToGlobalsAggregator(snt.AbstractModule):
     return self._reducer(graph.edges, indices, num_graphs)
 
 
-class NodesToGlobalsAggregator(snt.AbstractModule):
+class NodesToGlobalsAggregator(_base.AbstractModule):
   """Aggregates all nodes into globals."""
 
   def __init__(self, reducer, name="nodes_to_globals_aggregator"):
@@ -229,7 +229,7 @@ class NodesToGlobalsAggregator(snt.AbstractModule):
     return self._reducer(graph.nodes, indices, num_graphs)
 
 
-class _EdgesToNodesAggregator(snt.AbstractModule):
+class _EdgesToNodesAggregator(_base.AbstractModule):
   """Agregates sent or received edges into the corresponding nodes."""
 
   def __init__(self, reducer, use_sent_edges=False,
@@ -365,7 +365,7 @@ def unsorted_segment_max_or_zero(values, indices, num_groups,
         tf.math.unsorted_segment_max, values, indices, num_groups)
 
 
-class EdgeBlock(snt.AbstractModule):
+class EdgeBlock(_base.AbstractModule):
   """Edge block.
 
   A block that updates the features of each edge in a batch of graphs based on
@@ -460,7 +460,7 @@ class EdgeBlock(snt.AbstractModule):
     return graph.replace(edges=updated_edges)
 
 
-class NodeBlock(snt.AbstractModule):
+class NodeBlock(_base.AbstractModule):
   """Node block.
 
   A block that updates the features of each node in batch of graphs based on
@@ -570,7 +570,7 @@ class NodeBlock(snt.AbstractModule):
     return graph.replace(nodes=updated_nodes)
 
 
-class GlobalBlock(snt.AbstractModule):
+class GlobalBlock(_base.AbstractModule):
   """Global block.
 
   A block that updates the global features of each graph in a batch based on
