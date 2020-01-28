@@ -53,7 +53,7 @@ $ pip install graph_nets "tensorflow>=2.1.0-rc1" "dm-sonnet>=2.0.0b0" tensorflow
 $ pip install graph_nets "tensorflow_gpu>=2.1.0-rc1" "dm-sonnet>=2.0.0b0" tensorflow_probability
 ```
 
-The latest version of the library requires TensorFlow 1 (version 1.15 and above). For compatibility with earlier versions of TensorFlow, please install v1.0.4 of the Graph Nets library.
+The latest version of the library requires TensorFlow >=1.15. For compatibility with earlier versions of TensorFlow, please install v1.0.4 of the Graph Nets library.
 
 ## Usage example
 
