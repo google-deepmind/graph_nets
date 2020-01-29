@@ -103,7 +103,7 @@ model refines its prediction of the shortest path.
 
 ----------------
 
-#### [Run "sort demo" in browser](https://colab.research.google.com/github/deepmind/graph_nets/blob/master/graph_nets/demos/sort.ipynb)
+#### [Run "sort demo" in browser](https://colab.research.google.com/github/deepmind/graph_nets/blob/master/graph_nets/demos/sort.ipynb)  [(Run TF2 version)](https://colab.research.google.com/github/deepmind/graph_nets/blob/master/graph_nets/demos_tf2/sort.ipynb)
 
 The "sort demo" creates lists of random numbers, and trains a graph network to
 sort the list. After a sequence of message-passing steps, the model makes an
