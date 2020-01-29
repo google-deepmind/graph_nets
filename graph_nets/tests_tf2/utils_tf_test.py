@@ -12,8 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ============================================================================
-
-"""Tests for utils_tf.py."""
+"""Tests for utils_tf.py in Tensorflow 2."""
 
 from __future__ import absolute_import
 from __future__ import division
@@ -23,35 +22,18 @@ from absl.testing import parameterized
 from graph_nets import graphs
 from graph_nets import utils_np
 from graph_nets import utils_tf
-from graph_nets.tests import test_utils
+from graph_nets.tests_tf2 import test_utils
 import networkx as nx
 import numpy as np
 from six.moves import range
 import tensorflow as tf
+import tree
+
+
 
 
 class RepeatTest(tf.test.TestCase, parameterized.TestCase):
   """Tests for `_axis_to_inside`, `_inside_to_axis` and `repeat`."""
-
-  def test_axis_to_inside(self):
-    t = np.arange(24).reshape(3, 4, 2)
-    tensor = tf.constant(t)
-    axis = 1
-    expected = np.transpose(t, (axis, 0, 2))
-    op = utils_tf._axis_to_inside(tensor, axis)
-    with self.test_session() as sess:
-      actual = sess.run(op)
-    self.assertAllEqual(expected, actual)
-
-  def test_inside_to_axis(self):
-    t = np.arange(24).reshape(3, 4, 2)
-    tensor = tf.constant(t)
-    axis = 1
-    expected = np.transpose(t, (1, 0, 2))
-    op = utils_tf._inside_to_axis(tensor, axis)
-    with self.test_session() as sess:
-      actual = sess.run(op)
-    self.assertAllEqual(expected, actual)
 
   def test_repeat(self):
     t = np.arange(24).reshape(3, 2, 4)
@@ -59,14 +41,13 @@ class RepeatTest(tf.test.TestCase, parameterized.TestCase):
     repeats = [2, 3]
     axis = 1
     expected = np.repeat(t, repeats, axis=axis)
-    op = utils_tf.repeat(tensor, repeats, axis=axis)
-    with self.test_session() as sess:
-      actual = sess.run(op)
+    actual = utils_tf.repeat(tensor, repeats, axis=axis)
     self.assertAllEqual(expected, actual)
 
   @parameterized.named_parameters(("default", "custom_name", None),
                                   ("custom", None, "repeat"))
   def test_name_scope(self, name, expected_name):
+    self.skipTest("Uses get_default_graph.")
     kwargs = {"name": name} if name else {}
     expected_name = expected_name if expected_name else name
 
@@ -110,8 +91,6 @@ class ConcatTest(tf.test.TestCase, parameterized.TestCase):
     for none_field in none_fields:
       self.assertEqual(None, getattr(concat_graph, none_field))
     concat_graph = concat_graph.map(tf.no_op, none_fields)
-    with self.test_session() as sess:
-      concat_graph = sess.run(concat_graph)
     if "nodes" not in none_fields:
       self.assertAllEqual(
           np.array([0, 1, 2, 0, 1, 0, 1, 0, 1, 2]),
@@ -144,8 +123,7 @@ class ConcatTest(tf.test.TestCase, parameterized.TestCase):
         [_generate_graph(2, 3), _generate_graph(3, 2)])
     graph0 = graph0.map(tf.convert_to_tensor, graphs.ALL_FIELDS)
     graph1 = graph1.map(tf.convert_to_tensor, graphs.ALL_FIELDS)
-    with self.test_session() as sess:
-      concat_graph = sess.run(utils_tf.concat([graph0, graph1], axis=-1))
+    concat_graph = utils_tf.concat([graph0, graph1], axis=-1)
     self.assertAllEqual(
         np.array([[0, 0, 0, 2], [1, 0, 1, 2], [2, 0, 2, 2], [0, 1, 0, 3],
                   [1, 1, 1, 3]]), concat_graph.nodes)
@@ -157,241 +135,6 @@ class ConcatTest(tf.test.TestCase, parameterized.TestCase):
     self.assertAllEqual(np.array([1, 2, 4]), concat_graph.senders)
     self.assertAllEqual(np.array([0, 0, 3]), concat_graph.receivers)
     self.assertAllEqual(np.array([[0, 2], [1, 3]]), concat_graph.globals)
-
-
-class BuildPlaceholdersTest(test_utils.GraphsTest, parameterized.TestCase):
-
-  def _assert_expected_shapes(self, placeholders, but_for=None,
-                              num_graphs=None):
-    if but_for is None:
-      but_for = []
-    if "nodes" not in but_for:
-      self.assertAllEqual([None, 2], placeholders.nodes.shape.as_list())
-    if "edges" not in but_for:
-      self.assertAllEqual([None, 3], placeholders.edges.shape.as_list())
-    if "globals" not in but_for:
-      self.assertAllEqual([num_graphs, 1], placeholders.globals.shape.as_list())
-    for key in ["receivers", "senders"]:
-      if key not in but_for:
-        self.assertAllEqual([None], getattr(placeholders, key).shape.as_list())
-    for key in ["n_node", "n_edge"]:
-      if key not in but_for:
-        self.assertAllEqual([num_graphs],
-                            getattr(placeholders, key).shape.as_list())
-
-  @parameterized.named_parameters(
-      ("all_field_defined", [], False),
-      ("no features", ["nodes", "edges", "globals"], False),
-      ("no edges", ["edges", "receivers", "senders"], False),
-      ("dynamic", [], True))
-  def test_build_placeholders_from_specs(self,
-                                         none_fields,
-                                         force_dynamic_num_graphs=False):
-    num_graphs = 3
-    shapes = graphs.GraphsTuple(
-        nodes=[3, 4],
-        edges=[2],
-        globals=[num_graphs, 4, 6],
-        receivers=[None],
-        senders=[18],
-        n_node=[num_graphs],
-        n_edge=[num_graphs],
-    )
-    dtypes = graphs.GraphsTuple(
-        nodes=tf.float64,
-        edges=tf.int32,
-        globals=tf.float32,
-        receivers=tf.int64,
-        senders=tf.int64,
-        n_node=tf.int32,
-        n_edge=tf.int64)
-    dtypes = dtypes.map(lambda _: None, none_fields)
-    shapes = shapes.map(lambda _: None, none_fields)
-    placeholders = utils_tf._build_placeholders_from_specs(
-        dtypes, shapes, force_dynamic_num_graphs=force_dynamic_num_graphs)
-    for k in graphs.ALL_FIELDS:
-      placeholder = getattr(placeholders, k)
-      if k in none_fields:
-        self.assertEqual(None, placeholder)
-      else:
-        self.assertEqual(getattr(dtypes, k), placeholder.dtype)
-        if k not in ["n_node", "n_edge", "globals"] or force_dynamic_num_graphs:
-          self.assertAllEqual([None] + getattr(shapes, k)[1:],
-                              placeholder.shape.as_list())
-        else:
-          self.assertAllEqual([num_graphs] + getattr(shapes, k)[1:],
-                              placeholder.shape.as_list())
-
-  @parameterized.named_parameters(("static_num_graphs", False),
-                                  ("dynamic_num_graphs", True))
-  def test_placeholders_from_data_dicts(self, force_dynamic_num_graphs):
-    num_graphs = len(self.graphs_dicts_in)
-    placeholders = utils_tf.placeholders_from_data_dicts(
-        self.graphs_dicts_in, force_dynamic_num_graphs=force_dynamic_num_graphs)
-    self.assertAllEqual([None, 7, 11], placeholders.nodes.shape.as_list())
-    self.assertAllEqual([None, 13, 14], placeholders.edges.shape.as_list())
-
-    global_shape = placeholders.globals.shape.as_list()
-    if force_dynamic_num_graphs:
-      self.assertAllEqual([None, 5, 3], global_shape)
-    else:
-      self.assertAllEqual([num_graphs, 5, 3], global_shape)
-    for key in ["receivers", "senders"]:
-      self.assertAllEqual([None], getattr(placeholders, key).shape.as_list())
-    for key in ["n_node", "n_edge"]:
-      shape = getattr(placeholders, key).shape.as_list()
-      if force_dynamic_num_graphs:
-        self.assertAllEqual([None], shape)
-      else:
-        self.assertAllEqual([num_graphs], shape)
-
-  def test_placeholders_from_networkxs(self):
-    num_graphs = 16
-    networkxs = [
-        _generate_graph(batch_index) for batch_index in range(num_graphs)
-    ]
-    placeholders = utils_tf.placeholders_from_networkxs(
-        networkxs, force_dynamic_num_graphs=False)
-    self._assert_expected_shapes(placeholders, num_graphs=num_graphs)
-    self.assertEqual(tf.float32, placeholders.nodes.dtype)
-    self.assertEqual(tf.float64, placeholders.edges.dtype)
-
-  def test_placeholders_from_networkxs_missing_nodes(self):
-    num_graphs = 16
-    networkxs = [
-        _generate_graph(batch_index, n_nodes=0, add_edges=False)
-        for batch_index in range(num_graphs)
-    ]
-    placeholders = utils_tf.placeholders_from_networkxs(
-        networkxs, force_dynamic_num_graphs=False)
-    self.assertEqual(None, placeholders.nodes)
-    self.assertEqual(None, placeholders.edges)
-    self._assert_expected_shapes(
-        placeholders, but_for=["nodes", "edges"], num_graphs=num_graphs)
-
-  def test_placeholders_from_networkxs_hints(self):
-    num_graphs = 16
-    networkxs = [
-        _generate_graph(batch_index, n_nodes=0, add_edges=False)
-        for batch_index in range(num_graphs)
-    ]
-    placeholders = utils_tf.placeholders_from_networkxs(
-        networkxs,
-        node_shape_hint=[14],
-        edge_shape_hint=[17],
-        data_type_hint=tf.float64,
-        force_dynamic_num_graphs=False)
-    self.assertAllEqual([None, 14], placeholders.nodes.shape.as_list())
-    self.assertAllEqual([None, 17], placeholders.edges.shape.as_list())
-    self._assert_expected_shapes(
-        placeholders, but_for=["nodes", "edges"], num_graphs=num_graphs)
-    self.assertEqual(tf.float64, placeholders.nodes.dtype)
-    self.assertEqual(tf.float64, placeholders.edges.dtype)
-
-  def test_placeholders_from_networkxs_missing_edges(self):
-    num_graphs = 16
-    networkxs = [
-        _generate_graph(batch_index, add_edges=False)
-        for batch_index in range(num_graphs)
-    ]
-    placeholders = utils_tf.placeholders_from_networkxs(
-        networkxs, force_dynamic_num_graphs=False)
-    self.assertEqual(None, placeholders.edges)
-    self._assert_expected_shapes(
-        placeholders, but_for=["edges"], num_graphs=num_graphs)
-
-  def test_feed_data(self):
-    networkx = [_generate_graph(batch_index) for batch_index in range(16)]
-    placeholders = utils_tf.placeholders_from_networkxs(
-        networkx, force_dynamic_num_graphs=True)
-    # Does not need to be the same size
-    networkxs = [_generate_graph(batch_index) for batch_index in range(2)]
-    with self.test_session() as sess:
-      output = sess.run(
-          placeholders,
-          utils_tf.get_feed_dict(placeholders,
-                                 utils_np.networkxs_to_graphs_tuple(networkxs)))
-    self.assertAllEqual(
-        np.array([[0, 0], [1, 0], [2, 0], [3, 0], [0, 1], [1, 1], [2, 1],
-                  [3, 1]]), output.nodes)
-    self.assertEqual(np.float32, output.nodes.dtype)
-    self.assertAllEqual(np.array([[0], [1]]), output.globals)
-    self.assertEqual(np.float32, output.globals.dtype)
-    sorted_edges_content = sorted(
-        [(x, y, z)
-         for x, y, z in zip(output.receivers, output.senders, output.edges)])
-    self.assertAllEqual([0, 0, 1, 4, 4, 5],
-                        [x[0] for x in sorted_edges_content])
-    self.assertAllEqual([1, 2, 3, 5, 6, 7],
-                        [x[1] for x in sorted_edges_content])
-    self.assertEqual(np.float64, output.edges.dtype)
-    self.assertAllEqual(
-        np.array([[0, 1, 0], [1, 2, 0], [2, 3, 0], [0, 1, 1], [1, 2, 1],
-                  [2, 3, 1]]), [x[2] for x in sorted_edges_content])
-
-  @parameterized.named_parameters((
-      "no features",
-      ["nodes", "edges", "globals"],
-  ), (
-      "no edges",
-      ["edges", "receivers", "senders"],
-  ))
-  def test_get_feed_dict_raises(self, none_fields):
-    networkxs = [_generate_graph(batch_index) for batch_index in range(16)]
-    placeholders = utils_tf.placeholders_from_networkxs(networkxs)
-    feed_values = utils_np.networkxs_to_graphs_tuple(networkxs)
-    with self.assertRaisesRegexp(ValueError, ""):
-      utils_tf.get_feed_dict(
-          placeholders.map(lambda _: None, none_fields), feed_values)
-    with self.assertRaisesRegexp(ValueError, ""):
-      utils_tf.get_feed_dict(placeholders,
-                             feed_values.map(lambda _: None, none_fields))
-
-  def test_feed_data_no_nodes(self):
-    networkx = [
-        _generate_graph(batch_index, n_nodes=0, add_edges=False)
-        for batch_index in range(16)
-    ]
-    placeholders = utils_tf.placeholders_from_networkxs(
-        networkx, force_dynamic_num_graphs=True)
-    # Does not need to be the same size
-    networkxs = [
-        _generate_graph(batch_index, n_nodes=0, add_edges=False)
-        for batch_index in range(2)
-    ]
-    self.assertEqual(None, placeholders.nodes)
-    self.assertEqual(None, placeholders.edges)
-    with self.test_session() as sess:
-      output = sess.run(
-          placeholders.replace(nodes=tf.no_op(), edges=tf.no_op()),
-          utils_tf.get_feed_dict(placeholders,
-                                 utils_np.networkxs_to_graphs_tuple(networkxs)))
-    self.assertAllEqual(np.array([[0], [1]]), output.globals)
-    self.assertEqual(np.float32, output.globals.dtype)
-
-  def test_feed_data_no_edges(self):
-    networkx = [
-        _generate_graph(batch_index, add_edges=False)
-        for batch_index in range(16)
-    ]
-    placeholders = utils_tf.placeholders_from_networkxs(
-        networkx, force_dynamic_num_graphs=True)
-    # Does not need to be the same size
-    networkxs = [
-        _generate_graph(batch_index, add_edges=False)
-        for batch_index in range(2)
-    ]
-    self.assertEqual(None, placeholders.edges)
-    with self.test_session() as sess:
-      output = sess.run(
-          placeholders.replace(edges=tf.no_op()),
-          utils_tf.get_feed_dict(placeholders,
-                                 utils_np.networkxs_to_graphs_tuple(networkxs)))
-    self.assertAllEqual(
-        np.array([[0, 0], [1, 0], [2, 0], [3, 0], [0, 1], [1, 1], [2, 1],
-                  [3, 1]]), output.nodes)
-    self.assertAllEqual(np.array([[0], [1]]), output.globals)
-    self.assertEqual(np.float32, output.globals.dtype)
 
 
 class StopGradientsGraphTest(tf.test.TestCase, parameterized.TestCase):
@@ -409,9 +152,10 @@ class StopGradientsGraphTest(tf.test.TestCase, parameterized.TestCase):
   def _check_if_gradients_exist(self, stopped_gradients_graph):
     gradients = []
     for field in ["globals", "nodes", "edges"]:
-      xs = getattr(self._graph, field)
-      ys = getattr(stopped_gradients_graph, field)
-      gradient = tf.gradients(ys, xs)[0] if ys is not None else ys
+      with tf.GradientTape() as tape:
+        xs = getattr(self._graph, field)
+        ys = getattr(stopped_gradients_graph, field)
+      gradient = tape.gradient(ys, xs) if ys is not None else ys
       gradients.append(gradient)
     return [True if grad is not None else False for grad in gradients]
 
@@ -453,22 +197,16 @@ class IdentityTest(tf.test.TestCase, parameterized.TestCase):
   def setUp(self):
     super(IdentityTest, self).setUp()
     self._graph = utils_tf.data_dicts_to_graphs_tuple([{
-        "senders": tf.random_uniform([10], maxval=10, dtype=tf.int32),
-        "receivers": tf.random_uniform([10], maxval=10, dtype=tf.int32),
-        "nodes": tf.random_uniform([5, 7]),
-        "edges": tf.random_uniform([10, 6]),
-        "globals": tf.random_uniform([1, 8])
+        "senders": tf.random.uniform([10], maxval=10, dtype=tf.int32),
+        "receivers": tf.random.uniform([10], maxval=10, dtype=tf.int32),
+        "nodes": tf.random.uniform([5, 7]),
+        "edges": tf.random.uniform([10, 6]),
+        "globals": tf.random.uniform([1, 8])
     }])
 
   def test_name_scope(self):
     """Tests that the name scope are correctly pushed through this function."""
-    graph = self._graph
-    with tf.name_scope("test"):
-      graph_id = utils_tf.identity(graph)
-    for field in [
-        "nodes", "edges", "globals", "receivers", "senders", "n_node", "n_edge"
-    ]:
-      self.assertEqual("test", getattr(graph_id, field).name.split("/")[0])
+    self.skipTest("Tensor.name is meaningless when eager execution is enabled")
 
   @parameterized.named_parameters(
       ("all fields defined", []), ("no node features", ["nodes"]),
@@ -479,10 +217,8 @@ class IdentityTest(tf.test.TestCase, parameterized.TestCase):
     graph = self._graph.map(lambda _: None, none_fields)
     with tf.name_scope("test"):
       graph_id = utils_tf.identity(graph)
-    graph = utils_tf.make_runnable_in_session(graph)
-    graph_id = utils_tf.make_runnable_in_session(graph_id)
-    with self.test_session() as sess:
-      expected_out, actual_out = sess.run([graph, graph_id])
+    expected_out = utils_tf.nest_to_numpy(graph)
+    actual_out = utils_tf.nest_to_numpy(graph_id)
     for field in [
         "nodes", "edges", "globals", "receivers", "senders", "n_node", "n_edge"
     ]:
@@ -493,16 +229,16 @@ class IdentityTest(tf.test.TestCase, parameterized.TestCase):
             getattr(expected_out, field), getattr(actual_out, field), err=1e-4)
 
 
-class RunGraphWithNoneInSessionTest(tf.test.TestCase, parameterized.TestCase):
+class RunGraphWithNoneTest(tf.test.TestCase, parameterized.TestCase):
 
   def setUp(self):
-    super(RunGraphWithNoneInSessionTest, self).setUp()
+    super(RunGraphWithNoneTest, self).setUp()
     self._graph = utils_tf.data_dicts_to_graphs_tuple([{
-        "senders": tf.random_uniform([10], maxval=10, dtype=tf.int32),
-        "receivers": tf.random_uniform([10], maxval=10, dtype=tf.int32),
-        "nodes": tf.random_uniform([5, 7]),
-        "edges": tf.random_uniform([10, 6]),
-        "globals": tf.random_uniform([1, 8])
+        "senders": tf.random.uniform([10], maxval=10, dtype=tf.int32),
+        "receivers": tf.random.uniform([10], maxval=10, dtype=tf.int32),
+        "nodes": tf.random.uniform([5, 7]),
+        "edges": tf.random.uniform([10, 6]),
+        "globals": tf.random.uniform([1, 8])
     }])
 
   @parameterized.named_parameters(
@@ -511,12 +247,10 @@ class RunGraphWithNoneInSessionTest(tf.test.TestCase, parameterized.TestCase):
       ("no edges", ["edges", "receivers", "senders"]))
   def test_output(self, none_fields):
     """Tests that this function produces the identity."""
-    graph = self._graph.map(lambda _: None, none_fields)
-    with tf.name_scope("test"):
-      graph_id = utils_tf.make_runnable_in_session(graph)
-    graph = graph.map(tf.no_op, none_fields)
-    with self.test_session() as sess:
-      expected_out, actual_out = sess.run([graph, graph_id])
+    graph_id = self._graph.map(lambda _: None, none_fields)
+    graph = graph_id.map(tf.no_op, none_fields)
+    expected_out = graph
+    actual_out = graph_id
     for field in [
         "nodes", "edges", "globals", "receivers", "senders", "n_node", "n_edge"
     ]:
@@ -532,7 +266,6 @@ class ComputeOffsetTest(tf.test.TestCase):
 
   def setUp(self):
     super(ComputeOffsetTest, self).setUp()
-    tf.reset_default_graph()
     self.sizes = [5, 4, 3, 1, 2, 0, 3, 0, 4, 7]
     self.repeats = [2, 2, 0, 2, 1, 3, 2, 0, 3, 2]
     self.offset = [
@@ -540,19 +273,17 @@ class ComputeOffsetTest(tf.test.TestCase):
     ]
 
   def test_compute_stacked_offsets(self):
-    offset0 = utils_tf._compute_stacked_offsets(self.sizes, self.repeats)
+    offset0 = utils_tf._compute_stacked_offsets(
+        self.sizes, self.repeats)
     offset1 = utils_tf._compute_stacked_offsets(
         np.array(self.sizes), np.array(self.repeats))
     offset2 = utils_tf._compute_stacked_offsets(
         tf.constant(self.sizes, dtype=tf.int32),
         tf.constant(self.repeats, dtype=tf.int32))
 
-    with self.test_session() as sess:
-      o0, o1, o2 = sess.run([offset0, offset1, offset2])
-
-    self.assertAllEqual(self.offset, o0.tolist())
-    self.assertAllEqual(self.offset, o1.tolist())
-    self.assertAllEqual(self.offset, o2.tolist())
+    self.assertAllEqual(self.offset, offset0.numpy().tolist())
+    self.assertAllEqual(self.offset, offset1.numpy().tolist())
+    self.assertAllEqual(self.offset, offset2.numpy().tolist())
 
 
 class DataDictsCompletionTests(test_utils.GraphsTest, parameterized.TestCase):
@@ -587,12 +318,10 @@ class DataDictsCompletionTests(test_utils.GraphsTest, parameterized.TestCase):
       n_node = tf.shape(tf.constant(graph_dict["nodes"]))[0]
       edges_dict = utils_tf._create_complete_edges_from_nodes_dynamic(
           n_node, exclude_self_edges=False)
-      n_relation_op = n_node**2
-      with self.test_session() as sess:
-        n_relation, receivers, senders, n_edge = sess.run([
-            n_relation_op, edges_dict["receivers"], edges_dict["senders"],
-            edges_dict["n_edge"]
-        ])
+      n_relation = n_node**2
+      receivers = edges_dict["receivers"].numpy()
+      senders = edges_dict["senders"].numpy()
+      n_edge = edges_dict["n_edge"].numpy()
       self.assertAllEqual((n_relation,), receivers.shape)
       self.assertAllEqual((n_relation,), senders.shape)
       self.assertEqual(n_relation, n_edge)
@@ -624,12 +353,11 @@ class GraphsCompletionTests(test_utils.GraphsTest, parameterized.TestCase):
       g.pop("edges")
     graphs_tuple = utils_tf.data_dicts_to_graphs_tuple(self.graphs_dicts_in)
     graphs_tuple = graphs_tuple._replace(
-        n_edge=tf.placeholder_with_default(
+        n_edge=tf.constant(
             graphs_tuple.n_edge, shape=graphs_tuple.n_edge.get_shape()))
     n_edges = np.sum(self.reference_graph.n_edge)
     graphs_tuple = utils_tf.set_zero_edge_features(graphs_tuple, edge_size)
-    with self.test_session() as sess:
-      actual_edges = sess.run(graphs_tuple.edges)
+    actual_edges = graphs_tuple.edges
     self.assertNDArrayNear(
         np.zeros((n_edges, edge_size)), actual_edges, err=1e-4)
 
@@ -652,11 +380,11 @@ class GraphsCompletionTests(test_utils.GraphsTest, parameterized.TestCase):
     graphs_tuple = utils_tf.data_dicts_to_graphs_tuple(self.graphs_dicts_in)
     # Hide global shape information
     graphs_tuple = graphs_tuple._replace(
-        n_node=tf.placeholder_with_default(graphs_tuple.n_node, shape=[None]))
+        n_node=tf.constant(
+            graphs_tuple.n_node, shape=graphs_tuple.n_edge.get_shape()))
     n_graphs = self.reference_graph.n_edge.shape[0]
     graphs_tuple = utils_tf.set_zero_global_features(graphs_tuple, global_size)
-    with self.test_session() as sess:
-      actual_globals = sess.run(graphs_tuple.globals)
+    actual_globals = graphs_tuple.globals.numpy()
     self.assertNDArrayNear(
         np.zeros((n_graphs, global_size)), actual_globals, err=1e-4)
 
@@ -680,12 +408,11 @@ class GraphsCompletionTests(test_utils.GraphsTest, parameterized.TestCase):
       g.pop("nodes")
     graphs_tuple = utils_tf.data_dicts_to_graphs_tuple(self.graphs_dicts_in)
     graphs_tuple = graphs_tuple._replace(
-        n_node=tf.placeholder_with_default(
+        n_node=tf.constant(
             graphs_tuple.n_node, shape=graphs_tuple.n_node.get_shape()))
     n_nodes = np.sum(self.reference_graph.n_node)
     graphs_tuple = utils_tf.set_zero_node_features(graphs_tuple, node_size)
-    with self.test_session() as sess:
-      actual_nodes = sess.run(graphs_tuple.nodes)
+    actual_nodes = graphs_tuple.nodes.numpy()
     self.assertNDArrayNear(
         np.zeros((n_nodes, node_size)), actual_nodes, err=1e-4)
 
@@ -752,9 +479,9 @@ class GraphsCompletionTests(test_utils.GraphsTest, parameterized.TestCase):
     graphs_tuple = utils_tf.data_dicts_to_graphs_tuple(self.graphs_dicts_in)
     graphs_tuple = utils_tf.fully_connect_graph_dynamic(graphs_tuple,
                                                         exclude_self_edges)
-    with self.test_session() as sess:
-      actual_receivers, actual_senders = sess.run(
-          [graphs_tuple.receivers, graphs_tuple.senders])
+    actual_receivers = graphs_tuple.receivers.numpy()
+    actual_senders = graphs_tuple.senders.numpy()
+
     self.assertAllEqual((n_relation,), actual_receivers.shape)
     self.assertAllEqual((n_relation,), actual_senders.shape)
     self.assertAllEqual((len(self.graphs_dicts_in),),
@@ -783,9 +510,10 @@ class GraphsCompletionTests(test_utils.GraphsTest, parameterized.TestCase):
                                     ["nodes", "globals", "n_node", "n_edge"])
     graphs_tuple = utils_tf.fully_connect_graph_dynamic(graphs_tuple,
                                                         exclude_self_edges)
-    with self.test_session() as sess:
-      actual_receivers, actual_senders, actual_n_edge = sess.run(
-          [graphs_tuple.receivers, graphs_tuple.senders, graphs_tuple.n_edge])
+
+    actual_receivers = graphs_tuple.receivers.numpy()
+    actual_senders = graphs_tuple.senders.numpy()
+    actual_n_edge = graphs_tuple.n_edge.numpy()
     self.assertAllEqual((n_relation,), actual_receivers.shape)
     self.assertAllEqual((n_relation,), actual_senders.shape)
     self.assertAllEqual((len(self.graphs_dicts_in),), actual_n_edge.shape)
@@ -800,67 +528,6 @@ class GraphsCompletionTests(test_utils.GraphsTest, parameterized.TestCase):
       offset += n_node
     actual_edges = zip(actual_receivers, actual_senders)
     self.assertSetEqual(set(actual_edges), set(expected_edges))
-
-  @parameterized.named_parameters(
-      ("no self edges", False),
-      ("self edges", True),
-  )
-  def test_fully_connect_graph_static(self, exclude_self_edges):
-    for g in self.graphs_dicts_in:
-      g.pop("edges")
-      g.pop("receivers")
-      g.pop("senders")
-    num_graphs = 2
-    num_nodes = 3
-    if exclude_self_edges:
-      n_edges = num_nodes * (num_nodes - 1)
-    else:
-      n_edges = num_nodes * num_nodes
-    n_relation = num_graphs * n_edges
-    graphs_dicts = [{
-        "nodes": tf.zeros([num_nodes, 1])
-    } for _ in range(num_graphs)]
-    graphs_tuple = utils_tf.data_dicts_to_graphs_tuple(graphs_dicts)
-    graphs_tuple = utils_tf.fully_connect_graph_static(graphs_tuple,
-                                                       exclude_self_edges)
-    self.assertAllEqual((n_relation,),
-                        graphs_tuple.receivers.get_shape().as_list())
-    self.assertAllEqual((n_relation,),
-                        graphs_tuple.senders.get_shape().as_list())
-    self.assertAllEqual((num_graphs,),
-                        graphs_tuple.n_edge.get_shape().as_list())
-    with self.test_session() as sess:
-      actual_receivers, actual_senders, actual_n_edge = sess.run(
-          [graphs_tuple.receivers, graphs_tuple.senders, graphs_tuple.n_edge])
-    expected_edges = []
-    offset = 0
-    for _ in range(num_graphs):
-      for v1 in range(num_nodes):
-        for v2 in range(num_nodes):
-          if not exclude_self_edges or v1 != v2:
-            expected_edges.append((v1 + offset, v2 + offset))
-      offset += num_nodes
-    actual_edges = zip(actual_receivers, actual_senders)
-    self.assertNDArrayNear(
-        np.array([n_edges] * num_graphs), actual_n_edge, 1e-4)
-    self.assertSetEqual(set(actual_edges), set(expected_edges))
-
-  def test_fully_connect_graph_static_with_dynamic_sizes_raises(self):
-    for g in self.graphs_dicts_in:
-      g.pop("edges")
-      g.pop("receivers")
-      g.pop("senders")
-    graphs_tuple = utils_tf.data_dicts_to_graphs_tuple(self.graphs_dicts_in)
-    graphs_tuple_1 = graphs_tuple.map(test_utils.mask_leading_dimension,
-                                      ["n_node"])
-    with self.assertRaisesRegexp(ValueError, "known at construction time"):
-      utils_tf.fully_connect_graph_static(graphs_tuple_1)
-    graphs_tuple_2 = graphs_tuple.map(test_utils.mask_leading_dimension,
-                                      ["nodes"])
-    with self.assertRaisesRegexp(ValueError, "known at construction time"):
-      utils_tf.fully_connect_graph_static(graphs_tuple_2)
-    with self.assertRaisesRegexp(ValueError, "the same in all graphs"):
-      utils_tf.fully_connect_graph_static(graphs_tuple)
 
 
 class GraphsTupleConversionTests(test_utils.GraphsTest, parameterized.TestCase):
@@ -895,8 +562,7 @@ class GraphsTupleConversionTests(test_utils.GraphsTest, parameterized.TestCase):
     for field in none_fields:
       self.assertEqual(None, getattr(graphs_tuple, field))
     graphs_tuple = graphs_tuple.map(tf.no_op, none_fields)
-    with self.test_session() as sess:
-      self._assert_graph_equals_np(self.reference_graph, sess.run(graphs_tuple))
+    self._assert_graph_equals_np(self.reference_graph, graphs_tuple)
 
   @parameterized.parameters(("receivers",), ("senders",))
   def test_data_dicts_to_graphs_tuple_raises(self, none_field):
@@ -944,11 +610,9 @@ class GraphsIndexingTests(test_utils.GraphsTest, parameterized.TestCase):
       index = tf.constant(index)
 
     graphs_tuple = utils_tf.data_dicts_to_graphs_tuple(self.graphs_dicts_in)
-    graph_op = utils_tf.get_graph(graphs_tuple, index)
-    graph_op = utils_tf.make_runnable_in_session(graph_op)
+    graph = utils_tf.get_graph(graphs_tuple, index)
 
-    with self.test_session() as sess:
-      graph = sess.run(graph_op)
+    graph = utils_tf.nest_to_numpy(graph)
     actual, = utils_np.graphs_tuple_to_data_dicts(graph)
 
     for k, v in expected.items():
@@ -966,11 +630,9 @@ class GraphsIndexingTests(test_utils.GraphsTest, parameterized.TestCase):
       index = slice(tf.constant(index.start), tf.constant(index.stop))
 
     graphs_tuple = utils_tf.data_dicts_to_graphs_tuple(self.graphs_dicts_in)
-    graphs2_op = utils_tf.get_graph(graphs_tuple, index)
-    graphs2_op = utils_tf.make_runnable_in_session(graphs2_op)
+    graphs2 = utils_tf.get_graph(graphs_tuple, index)
 
-    with self.test_session() as sess:
-      graphs2 = sess.run(graphs2_op)
+    graphs2 = utils_tf.nest_to_numpy(graphs2)
     actual = utils_np.graphs_tuple_to_data_dicts(graphs2)
 
     for ex, ac in zip(expected, actual):
@@ -981,27 +643,27 @@ class GraphsIndexingTests(test_utils.GraphsTest, parameterized.TestCase):
 
   @parameterized.named_parameters(
       ("index_bad_type", 1.,
-       TypeError, "Index must be a valid scalar integer"),
-      ("index_bad_shape", tf.constant([0, 1]),
-       TypeError, "Valid tensor indices must be scalars"),
-      ("index_bad_dtype", tf.constant(1.),
-       TypeError, "Valid tensor indices must have types"),
-      ("slice_bad_type_stop", slice(1.),
-       TypeError, "Valid tensor indices must be integers"),
-      ("slice_bad_shape_stop", slice(tf.constant([0, 1])),
-       TypeError, "Valid tensor indices must be scalars"),
-      ("slice_bad_dtype_stop", slice(tf.constant(1.)),
-       TypeError, "Valid tensor indices must have types"),
+       TypeError, "Index must be a valid scalar integer", False, False),
+      ("index_bad_shape", [0, 1],
+       TypeError, "Valid tensor indices must be scalars", True, False),
+      ("index_bad_dtype", 1.,
+       TypeError, "Valid tensor indices must have types", True, False),
+      ("slice_bad_type_stop", 1.,
+       TypeError, "Valid tensor indices must be integers", False, True),
+      ("slice_bad_shape_stop", [0, 1],
+       TypeError, "Valid tensor indices must be scalars", True, True),
+      ("slice_bad_dtype_stop", 1.,
+       TypeError, "Valid tensor indices must have types", True, True),
       ("slice_bad_type_start", slice(0., 1),
-       TypeError, "Valid tensor indices must be integers"),
-      ("slice_bad_shape_start", slice(tf.constant([0, 1]), 1),
-       TypeError, "Valid tensor indices must be scalars"),
-      ("slice_bad_dtype_start", slice(tf.constant(0.), 1),
-       TypeError, "Valid tensor indices must have types"),
+       TypeError, "Valid tensor indices must be integers", False, False),
       ("slice_with_step", slice(0, 1, 1),
-       ValueError, "slices with step/stride are not supported"),
+       ValueError, "slices with step/stride are not supported", False, False),
   )
-  def test_raises(self, index, error_type, message):
+  def test_raises(self, index, error_type, message, use_constant, use_slice):
+    if use_constant:
+      index = tf.constant(index)
+    if use_slice:
+      index = slice(index)
     graphs_tuple = utils_tf.data_dicts_to_graphs_tuple(self.graphs_dicts_in)
     with self.assertRaisesRegexp(error_type, message):
       utils_tf.get_graph(graphs_tuple, index)
@@ -1016,125 +678,65 @@ class TestNumGraphs(test_utils.GraphsTest):
     self.empty_graph = graphs_tuple.map(lambda _: None,
                                         graphs.GRAPH_DATA_FIELDS)
 
-  def test_num_graphs_static(self):
+  def test_num_graphs(self):
     graph = self.empty_graph.replace(n_node=tf.zeros([3], dtype=tf.int32))
     self.assertEqual(3, utils_tf.get_num_graphs(graph))
 
-  def test_num_graphs_dynamic(self):
-    n_node_placeholder = tf.placeholder(tf.int32, [None])
-    graph = self.empty_graph.replace(n_node=n_node_placeholder)
-    num_graphs = utils_tf.get_num_graphs(graph)
-    with self.test_session() as sess:
-      actual_num_graphs = sess.run(
-          num_graphs, {n_node_placeholder: np.zeros([3], dtype=np.int32)})
-    self.assertEqual(3, actual_num_graphs)
 
+class TestNestToNumpy(test_utils.GraphsTest):
+  """Test that graph with tf.Tensor fields get converted to numpy."""
 
-class TestSpecsFromGraphsTuple(test_utils.GraphsTest, parameterized.TestCase):
-  """Tests for the `spec_from_graphs_tuple` function."""
+  def setUp(self):
+    super(TestNestToNumpy, self).setUp()
+    self._graph = utils_tf.data_dicts_to_graphs_tuple([{
+        "senders": tf.random.uniform([10], maxval=10, dtype=tf.int32),
+        "receivers": tf.random.uniform([10], maxval=10, dtype=tf.int32),
+        "nodes": tf.random.uniform([5, 7]),
+        "edges": tf.random.uniform([10, 6]),
+        "globals": tf.random.uniform([1, 8])
+    }])
 
-  @parameterized.named_parameters(
-      ("dynamic_nodes_edges_not_batched_without_constants",
-       True, True, False, False, False),
-      ("dynamic_num_graphs_not_batched_without_constants",
-       False, False, True, False, False),
-      ("static_num_graphs_not_batched_without_constants",
-       False, False, True, False, False),
-      ("static_num_graphs_batched_without_constants",
-       False, False, True, True, False),
-      ("dynamic_nodes_edges_not_batched_with_constants",
-       True, True, False, False, True),
-      ("dynamic_num_graphs_not_batched_with_constants",
-       False, False, True, False, True),
-      ("static_num_graphs_not_batched_with_constants",
-       False, False, True, False, True),
-      ("static_num_graphs_batched_with_constants",
-       False, False, True, True, True),
-      )
-  def test_correct_signature(
-      self,
-      dynamic_num_nodes,
-      dynamic_num_edges,
-      dynamic_num_graphs,
-      batched,
-      replace_globals_with_constant):
-    """Tests that the correct spec is created when using different options."""
+  def test_single_graph(self):
+    numpy_graph = utils_tf.nest_to_numpy(self._graph)
+    for field in graphs.ALL_FIELDS:
+      self.assertIsInstance(getattr(numpy_graph, field), np.ndarray)
+      self.assertNDArrayNear(
+          getattr(self._graph, field).numpy(),
+          getattr(numpy_graph, field), 1e-8)
 
-    if batched:
-      input_data_dicts = [self.graphs_dicts[1], self.graphs_dicts[2]]
-    else:
-      input_data_dicts = [self.graphs_dicts[1]]
+  def test_mixed_graph_conversion(self):
+    graph = self._graph.replace(nodes=None)
+    graph = graph.map(lambda x: x.numpy(), ["edges"])
 
-    graph = utils_np.data_dicts_to_graphs_tuple(input_data_dicts)
-    num_graphs = len(input_data_dicts)
-    num_edges = sum(graph.n_edge).item()
-    num_nodes = sum(graph.n_node).item()
+    converted_graph = utils_tf.nest_to_numpy(graph)
+    self.assertIsNone(converted_graph.nodes)
+    self.assertIsInstance(converted_graph.edges, np.ndarray)
 
-    # Manually setting edges and globals fields to give some variety in
-    # testing situations.
-    # Making edges have rank 1 to .
-    graph = graph.replace(edges=np.zeros(num_edges))
+  def test_nested_structure(self):
+    regular_graph = self._graph
+    graph_with_nested_fields = regular_graph.map(
+        lambda x: {"a": x, "b": tf.random.uniform([4, 6])})
 
-    # Make a constant field.
-    if replace_globals_with_constant:
-      graph = graph.replace(globals=np.array(0.0, dtype=np.float32))
+    nested_structure = [
+        None,
+        regular_graph,
+        (graph_with_nested_fields,),
+        tf.random.uniform([10, 6])]
+    nested_structure_numpy = utils_tf.nest_to_numpy(nested_structure)
 
-    spec_signature = utils_tf.specs_from_graphs_tuple(
-        graph, dynamic_num_graphs, dynamic_num_nodes, dynamic_num_edges)
+    tree.assert_same_structure(nested_structure, nested_structure_numpy)
 
-    # Captures if nodes/edges will be dynamic either due to dynamic nodes/edges
-    # or dynamic graphs.
-    dynamic_nodes_or_graphs = dynamic_num_nodes or dynamic_num_graphs
-    dynamic_edges_or_graphs = dynamic_num_edges or dynamic_num_graphs
+    for tensor_or_none, array_or_none in zip(
+        tree.flatten(nested_structure),
+        tree.flatten(nested_structure_numpy)):
+      if tensor_or_none is None:
+        self.assertIsNone(array_or_none)
+        continue
 
-    num_edges = None if dynamic_edges_or_graphs else num_edges
-    num_nodes = None if dynamic_nodes_or_graphs else num_nodes
-    num_graphs = None if dynamic_num_graphs else num_graphs
-
-    if replace_globals_with_constant:
-      expected_globals_shape = []
-    else:
-      expected_globals_shape = [num_graphs,] + test_utils.GLOBALS_DIMS
-
-    expected_answer = graphs.GraphsTuple(
-        nodes=tf.TensorSpec(
-            shape=[num_nodes,] + test_utils.NODES_DIMS,
-            dtype=tf.float32),
-        edges=tf.TensorSpec(
-            shape=[num_edges],  # Edges were manually replaced to have dim 1.
-            dtype=tf.float64),
-        n_node=tf.TensorSpec(
-            shape=[num_graphs],
-            dtype=tf.int32),
-        n_edge=tf.TensorSpec(
-            shape=[num_graphs],
-            dtype=tf.int32),
-        globals=tf.TensorSpec(
-            shape=expected_globals_shape,
-            dtype=tf.float32),
-        receivers=tf.TensorSpec(
-            shape=[num_edges],
-            dtype=tf.int32),
-        senders=tf.TensorSpec(
-            shape=[num_edges],
-            dtype=tf.int32),
-        )
-
-    with self.subTest(name="Correct Type."):
-      self.assertIsInstance(spec_signature, graphs.GraphsTuple)
-
-    with self.subTest(name="Correct Signature."):
-      self.assertAllEqual(spec_signature, expected_answer)
-
-  @parameterized.parameters(
-      (graphs.GLOBALS,), (graphs.EDGES,), (graphs.NODES,))
-  def test_none_throws_error(self, none_field):
-    """Tests that an error is thrown if a GraphsTuple field is None."""
-    graphs_tuple = utils_np.data_dicts_to_graphs_tuple([self.graphs_dicts[1]])
-    graphs_tuple = graphs_tuple.replace(**{none_field: None})
-    with self.assertRaisesRegex(
-        ValueError, "`{}` was `None`. All fields of the `G".format(none_field)):
-      utils_tf.specs_from_graphs_tuple(graphs_tuple)
+      self.assertIsNotNone(array_or_none)
+      self.assertNDArrayNear(
+          tensor_or_none.numpy(),
+          array_or_none, 1e-8)
 
 if __name__ == "__main__":
   tf.test.main()

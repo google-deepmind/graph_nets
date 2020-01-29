@@ -68,6 +68,7 @@ from graph_nets import utils_np
 import six
 from six.moves import range
 import tensorflow as tf
+import tree
 
 
 NODES = graphs.NODES
@@ -323,7 +324,7 @@ def placeholders_from_networkxs(graph_nxs,
   with tf.name_scope(name):
     graph = utils_np.networkxs_to_graphs_tuple(graph_nxs, node_shape_hint,
                                                edge_shape_hint,
-                                               data_type_hint.as_numpy_dtype())
+                                               data_type_hint.as_numpy_dtype)
     return _placeholders_from_graphs_tuple(
         graph, force_dynamic_num_graphs=force_dynamic_num_graphs)
 
@@ -355,7 +356,7 @@ def concat(input_graphs, axis, name="graph_concat"):
   If `axis` == 0, then the graphs are concatenated along the (underlying) batch
   dimension, i.e. the RECEIVERS, SENDERS, N_NODE and N_EDGE fields of the tuples
   are also concatenated together.
-  If `axis` != 0, then there is an underlying asumption that the receivers,
+  If `axis` != 0, then there is an underlying assumption that the receivers,
   SENDERS, N_NODE and N_EDGE fields of the graphs in `values` should all match,
   but this is not checked by this op.
   The graphs in `input_graphs` should have the same set of keys for which the
@@ -870,7 +871,11 @@ def set_zero_edge_features(graph,
   if edge_size is None:
     raise ValueError("Cannot complete edges with None edge_size")
   with tf.name_scope(name):
-    n_edges = tf.reduce_sum(graph.n_edge)
+    senders_leading_size = graph.senders.shape.as_list()[0]
+    if senders_leading_size is not None:
+      n_edges = senders_leading_size
+    else:
+      n_edges = tf.reduce_sum(graph.n_edge)
     return graph._replace(
         edges=tf.zeros(shape=[n_edges, edge_size], dtype=dtype))
 
@@ -1055,3 +1060,119 @@ def get_num_graphs(input_graphs, name="get_num_graphs"):
   """
   with tf.name_scope(name):
     return _get_shape(input_graphs.n_node)[0]
+
+
+def nest_to_numpy(nest_of_tensors):
+  """Converts a nest of eager tensors to a nest of numpy arrays.
+
+  Leaves non-`tf.Tensor` elements untouched.
+
+  A common use case for this method is to transform a `graphs.GraphsTuple` of
+  tensors into a `graphs.GraphsTuple` of arrays, or nests containing
+  `graphs.GraphsTuple`s.
+
+  Args:
+    nest_of_tensors: Nest containing `tf.Tensor`s.
+
+  Returns:
+    A nest with the same structure where `tf.Tensor`s are replaced by numpy
+    arrays and all other elements are kept the same.
+  """
+  return tree.map_structure(
+      lambda x: x.numpy() if isinstance(x, tf.Tensor) else x,
+      nest_of_tensors)
+
+
+def specs_from_graphs_tuple(
+    graphs_tuple_sample,
+    dynamic_num_graphs=False,
+    dynamic_num_nodes=True,
+    dynamic_num_edges=True,
+    description_fn=tf.TensorSpec,
+    ):
+  """Returns the `TensorSpec` specification for a given `GraphsTuple`.
+
+  This method is often used with `tf.function` in Tensorflow 2 to obtain
+  improved speed and performance of eager code. For example:
+
+  ```
+  example_graphs_tuple = get_graphs_tuple(...)
+
+  @tf.function(input_signature=[specs_from_graphs_tuple(example_graphs_tuple)])
+  def forward_pass(graphs_tuple_input):
+    graphs_tuple_output = graph_network(graphs_tuple_input)
+    return graphs_tuple_output
+
+  for i in range(num_training_steps):
+    input = get_graphs_tuple(...)
+    with tf.GradientTape() as tape:
+      output = forward_pass(input)
+      loss = compute_loss(output)
+    grads = tape.gradient(loss, graph_network.trainable_variables)
+    optimizer.apply(grads, graph_network.trainable_variables)
+  ```
+
+  Args:
+    graphs_tuple_sample: A `graphs.GraphsTuple` with sample data. `GraphsTuple`s
+      that have fields with `None` are not accepted since they will create an
+      invalid signature specification for `tf.function`. If your graph has
+      `None`s use `utils_tf.set_zero_edge_features`,
+      `utils_tf.set_zero_node_features` or `utils_tf.set_zero_global_features`.
+    dynamic_num_graphs: Boolean indicating if the number of graphs in each
+      `GraphsTuple` will be variable across examples.
+    dynamic_num_nodes: Boolean indicating if number of nodes per graph will be
+      variable across examples. Not used if `dynamic_num_graphs` is True, as the
+      size of the first axis of all `GraphsTuple` fields will be variable, due
+      to the variable number of graphs.
+    dynamic_num_edges: Boolean indicating if number of edges per graph will be
+      variable across examples. Not used if dynamic_num_graphs is True, as the
+      size of the first axis of all `GraphsTuple` fields will be variable, due
+      to the variable number of graphs.
+    description_fn: A callable which accepts the dtype and shape arguments to
+      describe the shapes and types of tensors. By default uses `tf.TensorSpec`.
+
+  Returns:
+    A `GraphsTuple` with fields replaced by `TensorSpec` with shape and dtype of
+    the field contents.
+
+  Raises:
+    ValueError: If a `GraphsTuple` has a field with `None`.
+  """
+  graphs_tuple_description_fields = {}
+  edge_dim_fields = [graphs.EDGES, graphs.SENDERS, graphs.RECEIVERS]
+
+  for field_name in graphs.ALL_FIELDS:
+    field_sample = getattr(graphs_tuple_sample, field_name)
+    if field_sample is None:
+      raise ValueError(
+          "The `GraphsTuple` field `{}` was `None`. All fields of the "
+          "`GraphsTuple` must be specified to create valid signatures that"
+          "work with `tf.function`. This can be achieved with `input_graph = "
+          "utils_tf.set_zero_{{node,edge,global}}_features(input_graph, 0)`"
+          "to replace None's by empty features in your graph. Alternatively"
+          "`None`s can be replaced by empty lists by doing `input_graph = "
+          "input_graph.replace({{nodes,edges,globals}}=[]). To ensure "
+          "correct execution of the program, it is recommended to restore "
+          "the None's once inside of the `tf.function` by doing "
+          "`input_graph = input_graph.replace({{nodes,edges,globals}}=None)"
+          "".format(field_name))
+
+    shape = list(field_sample.shape)
+    dtype = field_sample.dtype
+
+    # If the field is not None but has no field shape (i.e. it is a constant)
+    # then we consider this to be a replaced `None`.
+    # If dynamic_num_graphs, then all fields have a None first dimension.
+    # If dynamic_num_nodes, then the "nodes" field needs None first dimension.
+    # If dynamic_num_edges, then the "edges", "senders" and "receivers" need
+    # a None first dimension.
+    if (shape and (
+        dynamic_num_graphs or
+        (dynamic_num_nodes and field_name == graphs.NODES) or
+        (dynamic_num_edges and field_name in edge_dim_fields))):
+      shape[0] = None
+
+    graphs_tuple_description_fields[field_name] = description_fn(
+        shape=shape, dtype=dtype)
+
+  return graphs.GraphsTuple(**graphs_tuple_description_fields)

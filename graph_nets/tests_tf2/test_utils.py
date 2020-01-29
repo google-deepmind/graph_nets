@@ -12,8 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ============================================================================
-
-"""Utilities for `utils_np_test` and `utils_tf_test`.
+"""Utilities for `utils_tf_test` in Tensorflow 2.
 
 This provides a base class for tests involving `graphs.GraphsTuple`
 containing either numpy or tensorflow data. This base class is populated with
@@ -33,6 +32,7 @@ import numpy as np
 import tensorflow as tf
 
 
+
 @contextlib.contextmanager
 def assert_new_op_prefixes(test, expected_prefix, assert_some_new_ops=True):
   """Asserts the namescope of tf ops created within the context manager."""
@@ -48,13 +48,8 @@ def assert_new_op_prefixes(test, expected_prefix, assert_some_new_ops=True):
 
 
 def mask_leading_dimension(tensor):
-  return tf.placeholder_with_default(tensor,
-                                     [None] + tensor.get_shape().as_list()[1:])
-
-
-NODES_DIMS = [7, 11]
-EDGES_DIMS = [13, 14]
-GLOBALS_DIMS = [5, 3]
+  # Place holder masking does not work anymore. Just use the tensor as is.
+  return tf.constant(tensor, shape=tensor.get_shape().as_list())
 
 
 class GraphsTest(tf.test.TestCase):
@@ -94,12 +89,11 @@ class GraphsTest(tf.test.TestCase):
       return np.arange(np.prod(shape)).reshape(shape).astype(dtype)
 
     for i, (n_node_, n_edge_) in enumerate(zip(n_node, n_edge)):
-      n = _make_default_state([n_node_,] + NODES_DIMS, "f4") + i * 100.
-      e = _make_default_state(
-          [n_edge_,] + EDGES_DIMS, np.float64) + i * 100. + 1000.
+      n = _make_default_state([n_node_, 7, 11], "f4") + i * 100.
+      e = _make_default_state([n_edge_, 13, 14], np.float64) + i * 100. + 1000.
       r = _make_default_state([n_edge_], np.int32) % n_node[i]
       s = (_make_default_state([n_edge_], np.int32) + 1) % n_node[i]
-      g = _make_default_state(GLOBALS_DIMS, "f4") - i * 100. - 1000.
+      g = _make_default_state([5, 3], "f4") - i * 100. - 1000.
 
       nodes.append(n)
       edges.append(e)
@@ -130,10 +124,19 @@ class GraphsTest(tf.test.TestCase):
         globals=np.stack(globals_),
         n_node=np.array(n_node),
         n_edge=np.array(n_edge)))
-    self.graphs_dicts = graphs_dicts
 
   def _assert_graph_equals_np(self, graph0, graph, force_edges_ordering=False):
     """Asserts that all the graph fields of graph0 and graph match."""
+
+    def silent_convert_to_numpy(tensor):
+      if isinstance(tensor, tf.Tensor):
+        return tensor.numpy()
+      else:
+        return tensor
+
+    graph = graph.map(silent_convert_to_numpy, graphs.ALL_FIELDS)
+    graph0 = graph0.map(silent_convert_to_numpy, graphs.ALL_FIELDS)
+
     if graph0.nodes is None:
       self.assertEqual(None, graph.nodes)
     else:
@@ -179,4 +182,3 @@ class GraphsTest(tf.test.TestCase):
 
   def setUp(self):
     self._populate_test_data(max_size=2)
-    tf.reset_default_graph()

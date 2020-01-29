@@ -41,11 +41,13 @@
   * [`utils_tf.get_num_graphs`](graph_nets.md#utils_tf.get_num_graphs)
   * [`utils_tf.identity`](graph_nets.md#utils_tf.identity)
   * [`utils_tf.make_runnable_in_session`](graph_nets.md#utils_tf.make_runnable_in_session)
+  * [`utils_tf.nest_to_numpy`](graph_nets.md#utils_tf.nest_to_numpy)
   * [`utils_tf.placeholders_from_data_dicts`](graph_nets.md#utils_tf.placeholders_from_data_dicts)
   * [`utils_tf.placeholders_from_networkxs`](graph_nets.md#utils_tf.placeholders_from_networkxs)
   * [`utils_tf.repeat`](graph_nets.md#utils_tf.repeat)
   * [`utils_tf.set_zero_edge_features`](graph_nets.md#utils_tf.set_zero_edge_features)
   * [`utils_tf.set_zero_global_features`](graph_nets.md#utils_tf.set_zero_global_features)
   * [`utils_tf.set_zero_node_features`](graph_nets.md#utils_tf.set_zero_node_features)
+  * [`utils_tf.specs_from_graphs_tuple`](graph_nets.md#utils_tf.specs_from_graphs_tuple)
   * [`utils_tf.stop_gradient`](graph_nets.md#utils_tf.stop_gradient)
 

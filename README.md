@@ -29,21 +29,31 @@ The library will work with both the CPU and GPU version of TensorFlow, but to
 allow for that it does not list Tensorflow as a requirement, so you need to
 install Tensorflow separately if you haven't already done so.
 
-To install the Graph Nets library for CPU, run:
+To install the Graph Nets library and use it with TensorFlow 1 and Sonnet 1, run:
 
+(CPU)
 ```shell
-$ pip install graph_nets "tensorflow>=1.15,<2" tensorflow_probability
+$ pip install graph_nets "tensorflow>=1.15,<2" "dm-sonnet<2" "tensorflow_probability<0.9"
 ```
 
-To install the Graph Nets library for GPU, run:
-
+(GPU)
 ```shell
-$ pip install graph_nets "tensorflow_gpu>=1.15,<2" tensorflow_probability
+$ pip install graph_nets "tensorflow_gpu>=1.15,<2" "dm-sonnet<2" "tensorflow_probability<0.9"
 ```
 
-The latest version of the library is compatible with TensorFlow 1 (version 1.15
-and above). For compatibility with earlier versions of TensorFlow, please
-install v1.0.4 of the GraphNets library.
+To install the Graph Nets library and use it with TensorFlow 2 and Sonnet 2, run:
+
+(CPU)
+```shell
+$ pip install graph_nets "tensorflow>=2.1.0-rc1" "dm-sonnet>=2.0.0b0" tensorflow_probability
+```
+
+(GPU)
+```shell
+$ pip install graph_nets "tensorflow_gpu>=2.1.0-rc1" "dm-sonnet>=2.0.0b0" tensorflow_probability
+```
+
+The latest version of the library requires TensorFlow >=1.15. For compatibility with earlier versions of TensorFlow, please install v1.0.4 of the Graph Nets library.
 
 ## Usage example
 
