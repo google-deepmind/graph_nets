@@ -31,6 +31,7 @@ import sonnet as snt
 import tensorflow as tf
 
 
+
 SMALL_GRAPH_1 = {
     "globals": [1.1, 1.2, 1.3, 1.4],
     "nodes": [[10.1, 10.2], [20.1, 20.2], [30.1, 30.2]],
@@ -94,7 +95,7 @@ class GraphModuleTest(tf.test.TestCase, parameterized.TestCase):
     # No error at construction time.
     output = network(input_graph)
     # No error at runtime.
-    with self.test_session() as sess:
+    with tf.Session() as sess:
       sess.run(tf.global_variables_initializer())
       sess.run(output)
 
@@ -145,7 +146,7 @@ class BroadcastersTest(GraphModuleTest):
     input_graph = utils_tf.data_dicts_to_graphs_tuple(
         [SMALL_GRAPH_1, SMALL_GRAPH_2])
     broadcasted = broadcaster(input_graph)
-    with self.test_session() as sess:
+    with tf.Session() as sess:
       broadcasted_out = sess.run(broadcasted)
     self.assertNDArrayNear(
         np.array(expected, dtype=np.float32), broadcasted_out, err=1e-4)
@@ -167,7 +168,7 @@ class BroadcastersTest(GraphModuleTest):
     input_graph = input_graph.map(
         lambda v: tf.reshape(v, [v.get_shape().as_list()[0]] + [2, -1]))
     broadcasted = broadcaster(input_graph)
-    with self.test_session() as sess:
+    with tf.Session() as sess:
       broadcasted_out = sess.run(broadcasted)
     self.assertNDArrayNear(
         np.reshape(np.array(expected, dtype=np.float32),
@@ -237,7 +238,7 @@ class ReducersTest(GraphModuleTest):
 
     reduced = reducer(input_values, input_indices, num_groups)
 
-    with self.test_session() as sess:
+    with tf.Session() as sess:
       reduced_out = sess.run(reduced)
 
     self.assertNDArrayNear(
@@ -308,7 +309,7 @@ class FieldAggregatorsTest(GraphModuleTest):
   def test_output_values(self, aggregator, expected):
     input_graph = self._get_input_graph()
     aggregated = aggregator(input_graph)
-    with self.test_session() as sess:
+    with tf.Session() as sess:
       aggregated_out = sess.run(aggregated)
     self.assertNDArrayNear(
         np.array(expected, dtype=np.float32), aggregated_out, err=1e-4)
@@ -332,7 +333,7 @@ class FieldAggregatorsTest(GraphModuleTest):
     input_graph = input_graph.map(
         lambda v: tf.reshape(v, [v.get_shape().as_list()[0]] + [2, -1]))
     aggregated = aggregator(input_graph)
-    with self.test_session() as sess:
+    with tf.Session() as sess:
       aggregated_out = sess.run(aggregated)
     self.assertNDArrayNear(
         np.reshape(np.array(expected, dtype=np.float32),
@@ -414,7 +415,7 @@ class EdgeBlockTest(GraphModuleTest):
     self.assertEqual(input_graph.nodes, output_graph.nodes)
     self.assertEqual(input_graph.globals, output_graph.globals)
 
-    with self.test_session() as sess:
+    with tf.Session() as sess:
       output_graph_out, model_inputs_out = sess.run(
           (output_graph, model_inputs))
 
@@ -563,7 +564,7 @@ class EdgeBlockTest(GraphModuleTest):
     self.assertEqual(input_graph.nodes, output_graph.nodes)
     self.assertEqual(input_graph.globals, output_graph.globals)
 
-    with self.test_session() as sess:
+    with tf.Session() as sess:
       actual_edges, model_inputs_out = sess.run(
           (output_graph.edges, model_inputs))
 
@@ -637,7 +638,7 @@ class NodeBlockTest(GraphModuleTest):
     self.assertEqual(input_graph.edges, output_graph.edges)
     self.assertEqual(input_graph.globals, output_graph.globals)
 
-    with self.test_session() as sess:
+    with tf.Session() as sess:
       output_graph_out, model_inputs_out = sess.run(
           (output_graph, model_inputs))
 
@@ -809,7 +810,7 @@ class NodeBlockTest(GraphModuleTest):
     self.assertEqual(input_graph.edges, output_graph.edges)
     self.assertEqual(input_graph.globals, output_graph.globals)
 
-    with self.test_session() as sess:
+    with tf.Session() as sess:
       actual_nodes, model_inputs_out = sess.run(
           (output_graph.nodes, model_inputs))
 
@@ -877,7 +878,7 @@ class GlobalBlockTest(GraphModuleTest):
     self.assertEqual(input_graph.edges, output_graph.edges)
     self.assertEqual(input_graph.nodes, output_graph.nodes)
 
-    with self.test_session() as sess:
+    with tf.Session() as sess:
       output_graph_out, model_inputs_out = sess.run(
           (output_graph, model_inputs))
 
@@ -961,7 +962,7 @@ class GlobalBlockTest(GraphModuleTest):
     self.assertEqual(input_graph.edges, output_graph.edges)
     self.assertEqual(input_graph.nodes, output_graph.nodes)
 
-    with self.test_session() as sess:
+    with tf.Session() as sess:
       actual_globals, model_inputs_out = sess.run(
           (output_graph.globals, model_inputs))
 
@@ -1068,7 +1069,7 @@ class CommonBlockTests(GraphModuleTest):
     model = block_constructor(
         functools.partial(snt.nets.MLP, output_sizes=[10]))
     output = model(placeholders)
-    with self.test_session() as sess:
+    with tf.Session() as sess:
       sess.run(tf.global_variables_initializer())
       other_input_graph = utils_np.data_dicts_to_graphs_tuple(
           [SMALL_GRAPH_1, SMALL_GRAPH_2])

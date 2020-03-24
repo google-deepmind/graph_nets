@@ -124,15 +124,15 @@ class GraphsTest(tf.test.TestCase, parameterized.TestCase):
       mapped_fields.append(v)
       return v
     graph = graph.map(map_fn, graphs.ALL_FIELDS)
-    self.assertListEqual(sorted(mapped_fields), sorted(graphs.ALL_FIELDS))
+    self.assertCountEqual(mapped_fields, graphs.ALL_FIELDS)
 
   def test_map_field_default_value(self):
     """Tests the default value for the `fields` argument."""
     graph = graphs.GraphsTuple(**self.graph)
     mapped_fields = []
     graph = graph.map(mapped_fields.append)
-    self.assertListEqual(sorted(mapped_fields),
-                         sorted([graphs.EDGES, graphs.GLOBALS, graphs.NODES]))
+    self.assertCountEqual(
+        mapped_fields, [graphs.EDGES, graphs.GLOBALS, graphs.NODES])
 
   def test_map_field_is_parallel(self):
     """Tests that fields are mapped parallelaly, not sequentially."""
