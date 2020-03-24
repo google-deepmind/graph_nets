@@ -64,7 +64,18 @@ def _validate_broadcasted_graph(graph, from_field, to_field):
   _validate_graph(graph, [from_field, to_field], additional_message)
 
 
-def broadcast_globals_to_edges(graph, name="broadcast_globals_to_edges"):
+def _get_static_num_nodes(graph):
+  """Returns the static total number of nodes in a batch or None."""
+  return None if graph.nodes is None else graph.nodes.shape.as_list()[0]
+
+
+def _get_static_num_edges(graph):
+  """Returns the static total number of edges in a batch or None."""
+  return None if graph.senders is None else graph.senders.shape.as_list()[0]
+
+
+def broadcast_globals_to_edges(graph, name="broadcast_globals_to_edges",
+                               num_edges_hint=None):
   """Broadcasts the global features to the edges of a graph.
 
   Args:
@@ -72,6 +83,7 @@ def broadcast_globals_to_edges(graph, name="broadcast_globals_to_edges"):
       shape `[n_graphs] + global_shape`, and `N_EDGE` field of shape
       `[n_graphs]`.
     name: (string, optional) A name for the operation.
+    num_edges_hint: Integer indicating the total number of edges, if known.
 
   Returns:
     A tensor of shape `[n_edges] + global_shape`, where
@@ -85,10 +97,12 @@ def broadcast_globals_to_edges(graph, name="broadcast_globals_to_edges"):
   """
   _validate_broadcasted_graph(graph, GLOBALS, N_EDGE)
   with tf.name_scope(name):
-    return utils_tf.repeat(graph.globals, graph.n_edge, axis=0)
+    return utils_tf.repeat(graph.globals, graph.n_edge, axis=0,
+                           sum_repeats_hint=num_edges_hint)
 
 
-def broadcast_globals_to_nodes(graph, name="broadcast_globals_to_nodes"):
+def broadcast_globals_to_nodes(graph, name="broadcast_globals_to_nodes",
+                               num_nodes_hint=None):
   """Broadcasts the global features to the nodes of a graph.
 
   Args:
@@ -96,6 +110,7 @@ def broadcast_globals_to_nodes(graph, name="broadcast_globals_to_nodes"):
       shape `[n_graphs] + global_shape`, and `N_NODE` field of shape
       `[n_graphs]`.
     name: (string, optional) A name for the operation.
+    num_nodes_hint: Integer indicating the total number of nodes, if known.
 
   Returns:
     A tensor of shape `[n_nodes] + global_shape`, where
@@ -109,7 +124,8 @@ def broadcast_globals_to_nodes(graph, name="broadcast_globals_to_nodes"):
   """
   _validate_broadcasted_graph(graph, GLOBALS, N_NODE)
   with tf.name_scope(name):
-    return utils_tf.repeat(graph.globals, graph.n_node, axis=0)
+    return utils_tf.repeat(graph.globals, graph.n_node, axis=0,
+                           sum_repeats_hint=num_nodes_hint)
 
 
 def broadcast_sender_nodes_to_edges(
@@ -189,7 +205,8 @@ class EdgesToGlobalsAggregator(_base.AbstractModule):
                     additional_message="when aggregating from edges.")
     num_graphs = utils_tf.get_num_graphs(graph)
     graph_index = tf.range(num_graphs)
-    indices = utils_tf.repeat(graph_index, graph.n_edge, axis=0)
+    indices = utils_tf.repeat(graph_index, graph.n_edge, axis=0,
+                              sum_repeats_hint=_get_static_num_edges(graph))
     return self._reducer(graph.edges, indices, num_graphs)
 
 
@@ -225,7 +242,8 @@ class NodesToGlobalsAggregator(_base.AbstractModule):
                     additional_message="when aggregating from nodes.")
     num_graphs = utils_tf.get_num_graphs(graph)
     graph_index = tf.range(num_graphs)
-    indices = utils_tf.repeat(graph_index, graph.n_node, axis=0)
+    indices = utils_tf.repeat(graph_index, graph.n_node, axis=0,
+                              sum_repeats_hint=_get_static_num_nodes(graph))
     return self._reducer(graph.nodes, indices, num_graphs)
 
 
@@ -453,7 +471,9 @@ class EdgeBlock(_base.AbstractModule):
       edges_to_collect.append(broadcast_sender_nodes_to_edges(graph))
 
     if self._use_globals:
-      edges_to_collect.append(broadcast_globals_to_edges(graph))
+      num_edges_hint = _get_static_num_edges(graph)
+      edges_to_collect.append(
+          broadcast_globals_to_edges(graph, num_edges_hint=num_edges_hint))
 
     collected_edges = tf.concat(edges_to_collect, axis=-1)
     updated_edges = self._edge_model(collected_edges)
@@ -563,7 +583,12 @@ class NodeBlock(_base.AbstractModule):
       nodes_to_collect.append(graph.nodes)
 
     if self._use_globals:
-      nodes_to_collect.append(broadcast_globals_to_nodes(graph))
+      # The hint will be an integer if the graph has node features and the total
+      # number of nodes is known at tensorflow graph definition time, or None
+      # otherwise.
+      num_nodes_hint = _get_static_num_nodes(graph)
+      nodes_to_collect.append(
+          broadcast_globals_to_nodes(graph, num_nodes_hint=num_nodes_hint))
 
     collected_nodes = tf.concat(nodes_to_collect, axis=-1)
     updated_nodes = self._node_model(collected_nodes)

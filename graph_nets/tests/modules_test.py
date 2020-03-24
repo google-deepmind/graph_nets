@@ -32,6 +32,7 @@ import sonnet as snt
 import tensorflow as tf
 
 
+
 SMALL_GRAPH_1 = {
     "globals": [1.1, 1.2, 1.3],
     "nodes": [[10.1, 10.2], [20.1, 20.2], [30.1, 30.2]],
@@ -113,7 +114,7 @@ class GraphModuleTest(tf.test.TestCase, parameterized.TestCase):
     # No error at construction time.
     output = network(input_graph)
     # No error at runtime.
-    with self.test_session() as sess:
+    with tf.Session() as sess:
       sess.run(tf.global_variables_initializer())
       sess.run(output)
 
@@ -140,7 +141,7 @@ class GraphIndependentTest(GraphModuleTest):
     expected_output_nodes = model._node_model(input_graph.nodes)
     expected_output_globals = model._global_model(input_graph.globals)
 
-    with self.test_session() as sess:
+    with tf.Session() as sess:
       sess.run(tf.global_variables_initializer())
       (output_graph_out,
        expected_edges_out, expected_nodes_out, expected_globals_out) = sess.run(
@@ -296,7 +297,7 @@ class GraphNetworkTest(GraphModuleTest):
     expected_nodes = expected_output_node_block.nodes
     expected_globals = expected_output_global_block.globals
 
-    with self.test_session() as sess:
+    with tf.Session() as sess:
       sess.run(tf.global_variables_initializer())
       (output_graph_out,
        expected_edges_out, expected_nodes_out, expected_globals_out) = sess.run(
@@ -315,7 +316,7 @@ class GraphNetworkTest(GraphModuleTest):
     placeholders = input_graph.map(_mask_leading_dimension, graphs.ALL_FIELDS)
     model = self._get_model()
     output = model(placeholders)
-    with self.test_session() as sess:
+    with tf.Session() as sess:
       sess.run(tf.global_variables_initializer())
       other_input_graph = utils_np.data_dicts_to_graphs_tuple(
           [SMALL_GRAPH_1, SMALL_GRAPH_2])
@@ -395,7 +396,7 @@ class GraphNetworkTest(GraphModuleTest):
     expected_nodes = expected_output_node_block.nodes
     expected_globals = expected_output_global_block.globals
 
-    with self.test_session() as sess:
+    with tf.Session() as sess:
       sess.run(tf.global_variables_initializer())
       (output_graph_out,
        expected_edges_out, expected_nodes_out, expected_globals_out) = sess.run(
@@ -478,7 +479,7 @@ class GraphNetworkTest(GraphModuleTest):
     expected_nodes = expected_output_node_block.nodes
     expected_globals = expected_output_global_block.globals
 
-    with self.test_session() as sess:
+    with tf.Session() as sess:
       sess.run(tf.global_variables_initializer())
       (output_graph_out,
        expected_edges_out, expected_nodes_out, expected_globals_out) = sess.run(
@@ -556,7 +557,7 @@ class GraphNetworkTest(GraphModuleTest):
     expected_nodes = expected_output_node_block.nodes
     expected_globals = expected_output_global_block.globals
 
-    with self.test_session() as sess:
+    with tf.Session() as sess:
       sess.run(tf.global_variables_initializer())
       (output_graph_out,
        expected_edges_out, expected_nodes_out, expected_globals_out) = sess.run(
@@ -680,7 +681,7 @@ class InteractionNetworkTest(GraphModuleTest):
     expected_edges = expected_output_edge_block.edges
     expected_nodes = expected_output_node_block.nodes
 
-    with self.test_session() as sess:
+    with tf.Session() as sess:
       sess.run(tf.global_variables_initializer())
       (actual_edges_out, actual_nodes_out,
        expected_edges_out, expected_nodes_out) = sess.run(
@@ -802,7 +803,7 @@ class RelationNetworkTest(GraphModuleTest):
     self.assertEqual(input_graph.edges, output_graph.edges)
     self.assertEqual(input_graph.nodes, output_graph.nodes)
 
-    with self.test_session() as sess:
+    with tf.Session() as sess:
       sess.run(tf.global_variables_initializer())
       (actual_globals_out, expected_globals_out) = sess.run(
           (output_graph.globals, expected_output_global_block.globals))
@@ -910,7 +911,7 @@ class DeepSetsTest(GraphModuleTest):
     self.assertAllEqual(input_graph.receivers, output_graph.receivers)
     self.assertAllEqual(input_graph.senders, output_graph.senders)
 
-    with self.test_session() as sess:
+    with tf.Session() as sess:
       sess.run(tf.global_variables_initializer())
       (output_nodes_, output_globals_, expected_nodes_,
        expected_globals_) = sess.run(
@@ -1048,7 +1049,7 @@ class CommNetTest(GraphModuleTest):
     self.assertAllEqual(input_graph.receivers, output_graph.receivers,)
     self.assertAllEqual(input_graph.senders, output_graph.senders)
 
-    with self.test_session() as sess:
+    with tf.Session() as sess:
       sess.run(tf.global_variables_initializer())
       actual_nodes_output, expected_nodes_output = sess.run(
           [output_nodes, expected_nodes])
@@ -1112,7 +1113,7 @@ class SelfAttentionTest(GraphModuleTest):
     actual_softmax = modules._unsorted_segment_softmax(
         data, segment_ids, num_segments)
 
-    with self.test_session() as sess:
+    with tf.Session() as sess:
       actual_softmax_output = sess.run(actual_softmax)
 
     self.assertAllClose(expected_softmax, actual_softmax_output)
@@ -1136,7 +1137,7 @@ class SelfAttentionTest(GraphModuleTest):
     actual_normalized_edges = modules._received_edges_normalizer(
         graph, normalizer)
 
-    with self.test_session() as sess:
+    with tf.Session() as sess:
       actual_normalized_edges_output = sess.run(actual_normalized_edges)
 
     self.assertAllClose(expected_normalized, actual_normalized_edges_output)
@@ -1183,7 +1184,7 @@ class SelfAttentionTest(GraphModuleTest):
     output_graph = self_attention(values, keys, queries, attention_graph)
     mixed_nodes = output_graph.nodes
 
-    with self.test_session() as sess:
+    with tf.Session() as sess:
       mixed_nodes_output = sess.run(mixed_nodes)
 
     expected_mixed_nodes = [

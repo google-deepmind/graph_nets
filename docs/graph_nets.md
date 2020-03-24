@@ -4108,7 +4108,7 @@ Constructs an instance from an iterable of networkx graphs.
 * `ValueError`: If `graph_nxs` is not an iterable of networkx instances.
 
 
-### [`utils_tf.concat(input_graphs, axis, name='graph_concat')`](https://github.com/deepmind/graph_nets/blob/master/graph_nets/utils_tf.py?l=352)<!-- utils_tf.concat .code-reference -->
+### [`utils_tf.concat(input_graphs, axis, name='graph_concat')`](https://github.com/deepmind/graph_nets/blob/master/graph_nets/utils_tf.py?l=359)<!-- utils_tf.concat .code-reference -->
 
 Returns an op that concatenates graphs along a given axis.
 
@@ -4141,7 +4141,7 @@ corresponding fields is not `None`.
     in `input_graphs` are not the same for all the graphs.
 
 
-### [`utils_tf.data_dicts_to_graphs_tuple(data_dicts, name='data_dicts_to_graphs_tuple')`](https://github.com/deepmind/graph_nets/blob/master/graph_nets/utils_tf.py?l=915)<!-- utils_tf.data_dicts_to_graphs_tuple .code-reference -->
+### [`utils_tf.data_dicts_to_graphs_tuple(data_dicts, name='data_dicts_to_graphs_tuple')`](https://github.com/deepmind/graph_nets/blob/master/graph_nets/utils_tf.py?l=922)<!-- utils_tf.data_dicts_to_graphs_tuple .code-reference -->
 
 Creates a `graphs.GraphsTuple` containing tensors from data dicts.
 
@@ -4168,7 +4168,7 @@ Creates a `graphs.GraphsTuple` containing tensors from data dicts.
   A `graphs.GraphTuple` representing the graphs in `data_dicts`.
 
 
-### [`utils_tf.fully_connect_graph_dynamic(graph, exclude_self_edges=False, name='fully_connect_graph_dynamic')`](https://github.com/deepmind/graph_nets/blob/master/graph_nets/utils_tf.py?l=755)<!-- utils_tf.fully_connect_graph_dynamic .code-reference -->
+### [`utils_tf.fully_connect_graph_dynamic(graph, exclude_self_edges=False, name='fully_connect_graph_dynamic')`](https://github.com/deepmind/graph_nets/blob/master/graph_nets/utils_tf.py?l=762)<!-- utils_tf.fully_connect_graph_dynamic .code-reference -->
 
 Adds edges to a graph by fully-connecting the nodes.
 
@@ -4195,7 +4195,7 @@ or to be known at graph building time.
     `None` in `graph`.
 
 
-### [`utils_tf.fully_connect_graph_static(graph, exclude_self_edges=False, name='fully_connect_graph_static')`](https://github.com/deepmind/graph_nets/blob/master/graph_nets/utils_tf.py?l=687)<!-- utils_tf.fully_connect_graph_static .code-reference -->
+### [`utils_tf.fully_connect_graph_static(graph, exclude_self_edges=False, name='fully_connect_graph_static')`](https://github.com/deepmind/graph_nets/blob/master/graph_nets/utils_tf.py?l=694)<!-- utils_tf.fully_connect_graph_static .code-reference -->
 
 Adds edges to a graph by fully-connecting the nodes.
 
@@ -4231,7 +4231,7 @@ case, the method may silently yield an incorrect result.
     the constantness of the number of nodes per graph).
 
 
-### [`utils_tf.get_feed_dict(placeholders, graph)`](https://github.com/deepmind/graph_nets/blob/master/graph_nets/utils_tf.py?l=219)<!-- utils_tf.get_feed_dict .code-reference -->
+### [`utils_tf.get_feed_dict(placeholders, graph)`](https://github.com/deepmind/graph_nets/blob/master/graph_nets/utils_tf.py?l=226)<!-- utils_tf.get_feed_dict .code-reference -->
 
 Feeds a `graphs.GraphsTuple` of numpy arrays or `None` into `placeholders`.
 
@@ -4269,7 +4269,7 @@ restoring the correct behavior.
     match.
 
 
-### [`utils_tf.get_graph(input_graphs, index, name='get_graph')`](https://github.com/deepmind/graph_nets/blob/master/graph_nets/utils_tf.py?l=970)<!-- utils_tf.get_graph .code-reference -->
+### [`utils_tf.get_graph(input_graphs, index, name='get_graph')`](https://github.com/deepmind/graph_nets/blob/master/graph_nets/utils_tf.py?l=977)<!-- utils_tf.get_graph .code-reference -->
 
 Indexes into a graph.
 
@@ -4300,7 +4300,7 @@ graphs specified by the slice, and returns them into an another instance of a
 * `ValueError`: if `index` is a slice and `index.step` if not None.
 
 
-### [`utils_tf.get_num_graphs(input_graphs, name='get_num_graphs')`](https://github.com/deepmind/graph_nets/blob/master/graph_nets/utils_tf.py?l=1051)<!-- utils_tf.get_num_graphs .code-reference -->
+### [`utils_tf.get_num_graphs(input_graphs, name='get_num_graphs')`](https://github.com/deepmind/graph_nets/blob/master/graph_nets/utils_tf.py?l=1058)<!-- utils_tf.get_num_graphs .code-reference -->
 
 Returns the number of graphs (i.e. the batch size) in `input_graphs`.
 
@@ -4316,7 +4316,7 @@ Returns the number of graphs (i.e. the batch size) in `input_graphs`.
     number of graphs is dynamic).
 
 
-### [`utils_tf.identity(graph, name='graph_identity')`](https://github.com/deepmind/graph_nets/blob/master/graph_nets/utils_tf.py?l=465)<!-- utils_tf.identity .code-reference -->
+### [`utils_tf.identity(graph, name='graph_identity')`](https://github.com/deepmind/graph_nets/blob/master/graph_nets/utils_tf.py?l=472)<!-- utils_tf.identity .code-reference -->
 
 Pass each element of a graph through a `tf.identity`.
 
@@ -4341,7 +4341,7 @@ with tf.name_scope("encoder"):
   `graph_output.x = tf.identity(graph.x)`
 
 
-### [`utils_tf.make_runnable_in_session(graph, name='make_graph_runnable_in_session')`](https://github.com/deepmind/graph_nets/blob/master/graph_nets/utils_tf.py?l=490)<!-- utils_tf.make_runnable_in_session .code-reference -->
+### [`utils_tf.make_runnable_in_session(graph, name='make_graph_runnable_in_session')`](https://github.com/deepmind/graph_nets/blob/master/graph_nets/utils_tf.py?l=497)<!-- utils_tf.make_runnable_in_session .code-reference -->
 
 Allows a graph containing `None` fields to be run in a `tf.Session`.
 
@@ -4363,7 +4363,7 @@ meant to be called just before a call to `sess.run` on a Tensorflow session
   otherwise
 
 
-### [`utils_tf.nest_to_numpy(nest_of_tensors)`](https://github.com/deepmind/graph_nets/blob/master/graph_nets/utils_tf.py?l=1066)<!-- utils_tf.nest_to_numpy .code-reference -->
+### [`utils_tf.nest_to_numpy(nest_of_tensors)`](https://github.com/deepmind/graph_nets/blob/master/graph_nets/utils_tf.py?l=1073)<!-- utils_tf.nest_to_numpy .code-reference -->
 
 Converts a nest of eager tensors to a nest of numpy arrays.
 
@@ -4384,7 +4384,7 @@ tensors into a `graphs.GraphsTuple` of arrays, or nests containing
   arrays and all other elements are kept the same.
 
 
-### [`utils_tf.placeholders_from_data_dicts(data_dicts, force_dynamic_num_graphs=True, name='placeholders_from_data_dicts')`](https://github.com/deepmind/graph_nets/blob/master/graph_nets/utils_tf.py?l=263)<!-- utils_tf.placeholders_from_data_dicts .code-reference -->
+### [`utils_tf.placeholders_from_data_dicts(data_dicts, force_dynamic_num_graphs=True, name='placeholders_from_data_dicts')`](https://github.com/deepmind/graph_nets/blob/master/graph_nets/utils_tf.py?l=270)<!-- utils_tf.placeholders_from_data_dicts .code-reference -->
 
 Constructs placeholders compatible with a list of data dicts.
 
@@ -4402,7 +4402,7 @@ Constructs placeholders compatible with a list of data dicts.
     dimensions of the dictionaries in `data_dicts`.
 
 
-### [`utils_tf.placeholders_from_networkxs(graph_nxs, node_shape_hint=None, edge_shape_hint=None, data_type_hint=tf.float32, force_dynamic_num_graphs=True, name='placeholders_from_networkxs')`](https://github.com/deepmind/graph_nets/blob/master/graph_nets/utils_tf.py?l=284)<!-- utils_tf.placeholders_from_networkxs .code-reference -->
+### [`utils_tf.placeholders_from_networkxs(graph_nxs, node_shape_hint=None, edge_shape_hint=None, data_type_hint=tf.float32, force_dynamic_num_graphs=True, name='placeholders_from_networkxs')`](https://github.com/deepmind/graph_nets/blob/master/graph_nets/utils_tf.py?l=291)<!-- utils_tf.placeholders_from_networkxs .code-reference -->
 
 Constructs placeholders compatible with a list of networkx instances.
 
@@ -4443,7 +4443,7 @@ The networkx graph should be set up such that, for fixed shapes `node_shape`,
     dimensions of the graph_nxs.
 
 
-### [`utils_tf.repeat(tensor, repeats, axis=0, name='repeat')`](https://github.com/deepmind/graph_nets/blob/master/graph_nets/utils_tf.py?l=512)<!-- utils_tf.repeat .code-reference -->
+### [`utils_tf.repeat(tensor, repeats, axis=0, name='repeat')`](https://github.com/deepmind/graph_nets/blob/master/graph_nets/utils_tf.py?l=519)<!-- utils_tf.repeat .code-reference -->
 
 Repeats a `tf.Tensor`'s elements along an axis by custom amounts.
 
@@ -4463,7 +4463,7 @@ Equivalent to Numpy's `np.repeat`.
   The `tf.Tensor` with repeated values.
 
 
-### [`utils_tf.set_zero_edge_features(graph, edge_size, dtype=tf.float32, name='set_zero_edge_features')`](https://github.com/deepmind/graph_nets/blob/master/graph_nets/utils_tf.py?l=844)<!-- utils_tf.set_zero_edge_features .code-reference -->
+### [`utils_tf.set_zero_edge_features(graph, edge_size, dtype=tf.float32, name='set_zero_edge_features')`](https://github.com/deepmind/graph_nets/blob/master/graph_nets/utils_tf.py?l=851)<!-- utils_tf.set_zero_edge_features .code-reference -->
 
 Completes the edge state of a graph.
 
@@ -4489,7 +4489,7 @@ Completes the edge state of a graph.
 * `ValueError`: If `edge_size` is None.
 
 
-### [`utils_tf.set_zero_global_features(graph, global_size, dtype=tf.float32, name='set_zero_global_features')`](https://github.com/deepmind/graph_nets/blob/master/graph_nets/utils_tf.py?l=884)<!-- utils_tf.set_zero_global_features .code-reference -->
+### [`utils_tf.set_zero_global_features(graph, global_size, dtype=tf.float32, name='set_zero_global_features')`](https://github.com/deepmind/graph_nets/blob/master/graph_nets/utils_tf.py?l=891)<!-- utils_tf.set_zero_global_features .code-reference -->
 
 Completes the global state of a graph.
 
@@ -4513,7 +4513,7 @@ Completes the global state of a graph.
 * `ValueError`: If `global_size` is not `None`.
 
 
-### [`utils_tf.set_zero_node_features(graph, node_size, dtype=tf.float32, name='set_zero_node_features')`](https://github.com/deepmind/graph_nets/blob/master/graph_nets/utils_tf.py?l=812)<!-- utils_tf.set_zero_node_features .code-reference -->
+### [`utils_tf.set_zero_node_features(graph, node_size, dtype=tf.float32, name='set_zero_node_features')`](https://github.com/deepmind/graph_nets/blob/master/graph_nets/utils_tf.py?l=819)<!-- utils_tf.set_zero_node_features .code-reference -->
 
 Completes the node state of a graph.
 
@@ -4538,7 +4538,7 @@ Completes the node state of a graph.
 * `ValueError`: If `node_size` is None.
 
 
-### [`utils_tf.specs_from_graphs_tuple(graphs_tuple_sample, dynamic_num_graphs=False, dynamic_num_nodes=True, dynamic_num_edges=True, description_fn=<class 'tf.TensorSpec'>)`](https://github.com/deepmind/graph_nets/blob/master/graph_nets/utils_tf.py?l=1087)<!-- utils_tf.specs_from_graphs_tuple .code-reference -->
+### [`utils_tf.specs_from_graphs_tuple(graphs_tuple_sample, dynamic_num_graphs=False, dynamic_num_nodes=True, dynamic_num_edges=True, description_fn=<class 'tf.TensorSpec'>)`](https://github.com/deepmind/graph_nets/blob/master/graph_nets/utils_tf.py?l=1094)<!-- utils_tf.specs_from_graphs_tuple .code-reference -->
 
 Returns the `TensorSpec` specification for a given `GraphsTuple`.
 
@@ -4594,7 +4594,7 @@ for i in range(num_training_steps):
 * `ValueError`: If a `GraphsTuple` has a field with `None`.
 
 
-### [`utils_tf.stop_gradient(graph, stop_edges=True, stop_nodes=True, stop_globals=True, name='graph_stop_gradient')`](https://github.com/deepmind/graph_nets/blob/master/graph_nets/utils_tf.py?l=420)<!-- utils_tf.stop_gradient .code-reference -->
+### [`utils_tf.stop_gradient(graph, stop_edges=True, stop_nodes=True, stop_globals=True, name='graph_stop_gradient')`](https://github.com/deepmind/graph_nets/blob/master/graph_nets/utils_tf.py?l=427)<!-- utils_tf.stop_gradient .code-reference -->
 
 Stops the gradient flow through a graph.
 

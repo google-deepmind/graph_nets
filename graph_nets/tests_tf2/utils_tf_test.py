@@ -33,14 +33,27 @@ import tree
 
 
 class RepeatTest(tf.test.TestCase, parameterized.TestCase):
-  """Tests for `_axis_to_inside`, `_inside_to_axis` and `repeat`."""
+  """Tests for `repeat`."""
 
-  def test_repeat(self):
-    t = np.arange(24).reshape(3, 2, 4)
-    tensor = tf.constant(t)
-    repeats = [2, 3]
-    axis = 1
+  @parameterized.named_parameters(
+      ("base", (3,), [2, 3, 4], 0),
+      ("empty_group_first", (3,), [0, 3, 4], 0),
+      ("empty_group_middle", (3,), [2, 0, 4], 0),
+      ("double_empty_group_middle", (4,), [2, 0, 0, 4], 0),
+      ("empty_group_last", (3,), [2, 3, 0], 0),
+      ("just_one_group", (1,), [2], 0),
+      ("zero_groups", (0,), [], 0),
+      ("axis 0", (2, 3, 4), [2, 3], 0),
+      ("axis 1", (3, 2, 4), [2, 3], 1),
+      ("axis 2", (4, 3, 2), [2, 3], 2),
+      ("zero_groups_with_shape", (2, 0, 4), [], 1),
+      )
+  def test_repeat(self, shape, repeats, axis):
+    num_elements = np.prod(shape)
+    t = np.arange(num_elements).reshape(*shape)
     expected = np.repeat(t, repeats, axis=axis)
+    tensor = tf.constant(t)
+    repeats = tf.constant(repeats, dtype=tf.int32)
     actual = utils_tf.repeat(tensor, repeats, axis=axis)
     self.assertAllEqual(expected, actual)
 

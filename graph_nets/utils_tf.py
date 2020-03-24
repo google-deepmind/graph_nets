@@ -62,6 +62,7 @@ from __future__ import division
 from __future__ import print_function
 
 import collections
+import functools
 
 from graph_nets import graphs
 from graph_nets import utils_np
@@ -103,48 +104,6 @@ def _get_shape(tensor):
     return shape_list
   shape_tensor = tf.shape(tensor)
   return [shape_tensor[i] if s is None else s for i, s in enumerate(shape_list)]
-
-
-def _axis_to_inside(tensor, axis):
-  """Shifts a given axis of a tensor to be the innermost axis.
-
-  Args:
-    tensor: A `tf.Tensor` to shift.
-    axis: An `int` or `tf.Tensor` that indicates which axis to shift.
-
-  Returns:
-    The shifted tensor.
-  """
-
-  axis = tf.convert_to_tensor(axis)
-  rank = tf.rank(tensor)
-
-  range0 = tf.range(0, limit=axis)
-  range1 = tf.range(tf.add(axis, 1), limit=rank)
-  perm = tf.concat([[axis], range0, range1], 0)
-
-  return tf.transpose(tensor, perm=perm)
-
-
-def _inside_to_axis(tensor, axis):
-  """Shifts the innermost axis of a tensor to some other axis.
-
-  Args:
-    tensor: A `tf.Tensor` to shift.
-    axis: An `int` or `tf.Tensor` that indicates which axis to shift.
-
-  Returns:
-    The shifted tensor.
-  """
-
-  axis = tf.convert_to_tensor(axis)
-  rank = tf.rank(tensor)
-
-  range0 = tf.range(1, limit=axis + 1)
-  range1 = tf.range(tf.add(axis, 1), limit=rank)
-  perm = tf.concat([range0, [0], range1], 0)
-
-  return tf.transpose(tensor, perm=perm)
 
 
 def _build_placeholders_from_specs(dtypes,
@@ -189,6 +148,7 @@ def _build_placeholders_from_specs(dtypes,
       shape = list(shape)
       if field not in [N_NODE, N_EDGE, GLOBALS] or force_dynamic_num_graphs:
         shape[0] = None
+
       dct[field] = tf.placeholder(dtype, shape=shape, name=field)
 
   return graphs.GraphsTuple(**dct)
@@ -508,7 +468,7 @@ def make_runnable_in_session(graph, name="make_graph_runnable_in_session"):
     return graph.map(lambda _: tf.no_op(), none_fields)
 
 
-def repeat(tensor, repeats, axis=0, name="repeat"):
+def repeat(tensor, repeats, axis=0, name="repeat", sum_repeats_hint=None):
   """Repeats a `tf.Tensor`'s elements along an axis by custom amounts.
 
   Equivalent to Numpy's `np.repeat`.
@@ -519,11 +479,64 @@ def repeat(tensor, repeats, axis=0, name="repeat"):
     repeats: A 1D sequence of the number of repeats per element.
     axis: An axis to repeat along. Defaults to 0.
     name: (string, optional) A name for the operation.
+    sum_repeats_hint: Integer with the total sum of repeats in case it is
+      known at graph definition time.
 
   Returns:
     The `tf.Tensor` with repeated values.
   """
-  return tf.repeat(tensor, repeats, axis=axis, name=name)
+  with tf.name_scope(name):
+    if sum_repeats_hint is not None:
+      sum_repeats = sum_repeats_hint
+    else:
+      sum_repeats = tf.reduce_sum(repeats)
+
+    # This is TPU compatible.
+    # Create a tensor consistent with output size indicating where the splits
+    # between the different repeats are. For example:
+    #   repeats = [2, 3, 6]
+    # with cumsum(exclusive=True):
+    #   scatter_indices = [0, 2, 5]
+    # with scatter_nd:
+    #   block_split_indicators = [1, 0, 1, 0, 0, 1, 0, 0, 0, 0, 0]
+    # cumsum(exclusive=False) - 1
+    #   gather_indices =         [0, 0, 1, 1, 1, 2, 2, 2, 2, 2, 2]
+
+    # Note that scatter_nd accumulates for duplicated indices, so for
+    # repeats = [2, 0, 6]
+    # scatter_indices = [0, 2, 2]
+    # block_split_indicators = [1, 0, 2, 0, 0, 0, 0, 0]
+    # gather_indices =         [0, 0, 2, 2, 2, 2, 2, 2]
+
+    # Sometimes repeats may have zeros in the last groups. E.g.
+    # for repeats = [2, 3, 0]
+    # scatter_indices = [0, 2, 5]
+    # However, the `gather_nd` only goes up to (sum_repeats - 1) index. (4 in
+    # the example). And this would throw an error due to trying to index
+    # outside the shape. Instead we let the scatter_nd have one more element
+    # and we trim it from the output.
+    scatter_indices = tf.cumsum(repeats, exclusive=True)
+    block_split_indicators = tf.scatter_nd(
+        indices=tf.expand_dims(scatter_indices, axis=1),
+        updates=tf.ones_like(scatter_indices),
+        shape=[sum_repeats + 1])[:-1]
+    gather_indices = tf.cumsum(block_split_indicators, exclusive=False) - 1
+
+    # An alternative implementation of the same, where block split indicators
+    # does not have an indicator for the first group, and requires less ops
+    # but requires creating a matrix of size [len(repeats), sum_repeats] is:
+    # cumsum_repeats = tf.cumsum(repeats, exclusive=False)
+    # block_split_indicators = tf.reduce_sum(
+    #     tf.one_hot(cumsum_repeats, sum_repeats, dtype=tf.int32), axis=0)
+    # gather_indices = tf.cumsum(block_split_indicators, exclusive=False)
+
+    # Now simply gather the tensor along the correct axis.
+    repeated_tensor = tf.gather(tensor, gather_indices, axis=axis)
+
+    shape = tensor.shape.as_list()
+    shape[axis] = sum_repeats_hint
+    repeated_tensor.set_shape(shape)
+    return repeated_tensor
 
 
 def _populate_number_fields(data_dict):
@@ -1118,6 +1131,11 @@ def specs_from_graphs_tuple(
       invalid signature specification for `tf.function`. If your graph has
       `None`s use `utils_tf.set_zero_edge_features`,
       `utils_tf.set_zero_node_features` or `utils_tf.set_zero_global_features`.
+      This method also returns the signature for `GraphTuple`s with nests of
+      tensors in the feature fields (`nodes`, `edges`, `globals`), including
+      empty nests (e.g. empty list, dict, or tuple). Nested node, edge and
+      global feature tensors, should usually have the same leading dimension as
+      all other node, edge and global feature tensors respectively.
     dynamic_num_graphs: Boolean indicating if the number of graphs in each
       `GraphsTuple` will be variable across examples.
     dynamic_num_nodes: Boolean indicating if number of nodes per graph will be
@@ -1132,14 +1150,34 @@ def specs_from_graphs_tuple(
       describe the shapes and types of tensors. By default uses `tf.TensorSpec`.
 
   Returns:
-    A `GraphsTuple` with fields replaced by `TensorSpec` with shape and dtype of
-    the field contents.
+    A `GraphsTuple` with tensors replaced by `TensorSpec` with shape and dtype
+    of the field contents.
 
   Raises:
     ValueError: If a `GraphsTuple` has a field with `None`.
   """
   graphs_tuple_description_fields = {}
   edge_dim_fields = [graphs.EDGES, graphs.SENDERS, graphs.RECEIVERS]
+
+  # Method to get the spec for a single tensor.
+  def get_tensor_spec(tensor, field_name):
+    """Returns the spec of an array or a tensor in the field of a graph."""
+
+    shape = list(tensor.shape)
+    dtype = tensor.dtype
+
+    # If the field is not None but has no field shape (i.e. it is a constant)
+    # then we consider this to be a replaced `None`.
+    # If dynamic_num_graphs, then all fields have a None first dimension.
+    # If dynamic_num_nodes, then the "nodes" field needs None first dimension.
+    # If dynamic_num_edges, then the "edges", "senders" and "receivers" need
+    # a None first dimension.
+    if (shape and (
+        dynamic_num_graphs or
+        (dynamic_num_nodes and field_name == graphs.NODES) or
+        (dynamic_num_edges and field_name in edge_dim_fields))):
+      shape[0] = None
+    return description_fn(shape=shape, dtype=dtype)
 
   for field_name in graphs.ALL_FIELDS:
     field_sample = getattr(graphs_tuple_sample, field_name)
@@ -1157,22 +1195,13 @@ def specs_from_graphs_tuple(
           "`input_graph = input_graph.replace({{nodes,edges,globals}}=None)"
           "".format(field_name))
 
-    shape = list(field_sample.shape)
-    dtype = field_sample.dtype
+    if field_name in graphs.GRAPH_FEATURE_FIELDS:
+      field_spec = tree.map_structure(
+          functools.partial(get_tensor_spec, field_name=field_name),
+          field_sample)
+    else:
+      field_spec = get_tensor_spec(field_sample, field_name=field_name)
 
-    # If the field is not None but has no field shape (i.e. it is a constant)
-    # then we consider this to be a replaced `None`.
-    # If dynamic_num_graphs, then all fields have a None first dimension.
-    # If dynamic_num_nodes, then the "nodes" field needs None first dimension.
-    # If dynamic_num_edges, then the "edges", "senders" and "receivers" need
-    # a None first dimension.
-    if (shape and (
-        dynamic_num_graphs or
-        (dynamic_num_nodes and field_name == graphs.NODES) or
-        (dynamic_num_edges and field_name in edge_dim_fields))):
-      shape[0] = None
-
-    graphs_tuple_description_fields[field_name] = description_fn(
-        shape=shape, dtype=dtype)
+    graphs_tuple_description_fields[field_name] = field_spec
 
   return graphs.GraphsTuple(**graphs_tuple_description_fields)

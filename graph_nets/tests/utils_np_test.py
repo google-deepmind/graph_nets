@@ -101,7 +101,7 @@ class DataDictsConversionTest(test_utils.GraphsTest, parameterized.TestCase):
     for key in ["n_node", "n_edge", "receivers", "senders"]:
       self.assertEqual(np.int32, getattr(out, key).dtype)
     for key in ["nodes", "edges"]:
-      self.assertEqual(tf.float64, getattr(out, key).dtype)
+      self.assertEqual(np.float64, getattr(out, key).dtype)
 
   def test_data_dicts_to_graphs_tuple_from_lists(self):
     """Tests creatings a GraphsTuple from python lists."""
