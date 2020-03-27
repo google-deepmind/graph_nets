@@ -30,7 +30,7 @@ This representation could typically take the following form, for a batch of
     graph.
 
   - N_EDGE: The number of edges per graph. It is a vector of integers with shape
-    `[n_graphs]`, such that `graph.N_NODE[i]` is the number of edges in the i-th
+    `[n_graphs]`, such that `graph.N_EDGE[i]` is the number of edges in the i-th
     graph.
 
   - NODES: The nodes features. It is either `None` (the graph has no node
@@ -42,7 +42,7 @@ This representation could typically take the following form, for a batch of
     graph will have its features in the
     `1 + graph.N_NODE[0] + graph.N_NODE[1]`-th slot of graph.NODES.
     Observe that having a `None` value for this field does not mean that the
-    graphs have no nodes, only that they do not have features.
+    graphs have no nodes, only that they do not have node features.
 
   - EDGES: The edges features. It is either `None` (the graph has no edge
     features), or a vector of shape `[n_edges] + edge_shape`, where
@@ -53,7 +53,7 @@ This representation could typically take the following form, for a batch of
     graph will have its features in the `2 + graph.N_EDGE[0] + graph.N_EDGE[1]`-
     th slot of graph.EDGES.
     Observe that having a `None` value for this field does not necessarily mean
-    that the graph has no edges, only that they do not have features.
+    that the graph has no edges, only that they do not have edge features.
 
   - RECEIVERS: The indices of the receiver nodes, for each edge. It is either
     `None` (if the graph has no edges), or a vector of integers of shape
