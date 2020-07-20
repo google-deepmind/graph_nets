@@ -437,7 +437,7 @@ class EdgeBlock(_base.AbstractModule):
     with self._enter_variable_scope():
       self._edge_model = edge_model_fn()
 
-  def _build(self, graph):
+  def _build(self, graph, **kwargs):
     """Connects the edge block.
 
     Args:
@@ -446,6 +446,7 @@ class EdgeBlock(_base.AbstractModule):
         `use_receiver_nodes` or `use_sender_nodes` is `True`) and per graph
         globals (if `use_globals` is `True`) should be concatenable on the last
         axis.
+      **kwargs: Addition parameters to pass to the Sonnet module.
 
     Returns:
       An output `graphs.GraphsTuple` with updated edges.
@@ -476,7 +477,7 @@ class EdgeBlock(_base.AbstractModule):
           broadcast_globals_to_edges(graph, num_edges_hint=num_edges_hint))
 
     collected_edges = tf.concat(edges_to_collect, axis=-1)
-    updated_edges = self._edge_model(collected_edges)
+    updated_edges = self._edge_model(collected_edges, **kwargs)
     return graph.replace(edges=updated_edges)
 
 
@@ -557,7 +558,7 @@ class NodeBlock(_base.AbstractModule):
         self._sent_edges_aggregator = SentEdgesToNodesAggregator(
             sent_edges_reducer)
 
-  def _build(self, graph):
+  def _build(self, graph, **kwargs):
     """Connects the node block.
 
     Args:
@@ -565,6 +566,7 @@ class NodeBlock(_base.AbstractModule):
         features (if `use_received_edges` or `use_sent_edges` is `True`),
         individual nodes features (if `use_nodes` is True) and per graph globals
         (if `use_globals` is `True`) should be concatenable on the last axis.
+      **kwargs: Addition parameters to pass to the Sonnet module.
 
     Returns:
       An output `graphs.GraphsTuple` with updated nodes.
@@ -591,7 +593,7 @@ class NodeBlock(_base.AbstractModule):
           broadcast_globals_to_nodes(graph, num_nodes_hint=num_nodes_hint))
 
     collected_nodes = tf.concat(nodes_to_collect, axis=-1)
-    updated_nodes = self._node_model(collected_nodes)
+    updated_nodes = self._node_model(collected_nodes, **kwargs)
     return graph.replace(nodes=updated_nodes)
 
 
@@ -663,7 +665,7 @@ class GlobalBlock(_base.AbstractModule):
         self._nodes_aggregator = NodesToGlobalsAggregator(
             nodes_reducer)
 
-  def _build(self, graph):
+  def _build(self, graph, **kwargs):
     """Connects the global block.
 
     Args:
@@ -671,6 +673,7 @@ class GlobalBlock(_base.AbstractModule):
         (if `use_edges` is `True`), individual nodes (if `use_nodes` is True)
         and per graph globals (if `use_globals` is `True`) should be
         concatenable on the last axis.
+      **kwargs: Addition parameters to pass to the Sonnet module.
 
     Returns:
       An output `graphs.GraphsTuple` with updated globals.
@@ -690,5 +693,5 @@ class GlobalBlock(_base.AbstractModule):
       globals_to_collect.append(graph.globals)
 
     collected_globals = tf.concat(globals_to_collect, axis=-1)
-    updated_globals = self._global_model(collected_globals)
+    updated_globals = self._global_model(collected_globals, **kwargs)
     return graph.replace(globals=updated_globals)
