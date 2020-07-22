@@ -446,7 +446,7 @@ class EdgeBlock(_base.AbstractModule):
         `use_receiver_nodes` or `use_sender_nodes` is `True`) and per graph
         globals (if `use_globals` is `True`) should be concatenable on the last
         axis.
-      **kwargs: Addition parameters to pass to the Sonnet module.
+      **kwargs: Optional keyword arguments to pass to the Sonnet module.
 
     Returns:
       An output `graphs.GraphsTuple` with updated edges.
@@ -566,7 +566,7 @@ class NodeBlock(_base.AbstractModule):
         features (if `use_received_edges` or `use_sent_edges` is `True`),
         individual nodes features (if `use_nodes` is True) and per graph globals
         (if `use_globals` is `True`) should be concatenable on the last axis.
-      **kwargs: Addition parameters to pass to the Sonnet module.
+      **kwargs: Optional keyword arguments to pass to the Sonnet module.
 
     Returns:
       An output `graphs.GraphsTuple` with updated nodes.
@@ -673,7 +673,7 @@ class GlobalBlock(_base.AbstractModule):
         (if `use_edges` is `True`), individual nodes (if `use_nodes` is True)
         and per graph globals (if `use_globals` is `True`) should be
         concatenable on the last axis.
-      **kwargs: Addition parameters to pass to the Sonnet module.
+      **kwargs: Optional keyword arguments to pass to the Sonnet module.
 
     Returns:
       An output `graphs.GraphsTuple` with updated globals.
