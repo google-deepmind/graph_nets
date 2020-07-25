@@ -184,7 +184,6 @@ class RelationNetwork(_base.AbstractModule):
           use_globals=False,
           edges_reducer=reducer)
 
-      node_kw: Optional keyword arguments to pass to the node block model.
   def _build(self, graph, edge_kw={}, global_kw={}):
     """Connects the RelationNetwork.
 
