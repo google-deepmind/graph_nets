@@ -375,7 +375,7 @@ class GraphIndependent(_base.AbstractModule):
     return graph.replace(
         edges=self._edge_model(graph.edges, **edge_kw),
         nodes=self._node_model(graph.nodes, **node_kw),
-        globals=self._global_model(graph.globals), **global_kw)
+        globals=self._global_model(graph.globals, **global_kw))
 
 
 class DeepSets(_base.AbstractModule):

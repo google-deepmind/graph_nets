@@ -126,12 +126,20 @@ class GraphIndependentTest(GraphModuleTest):
 
   def _get_model(self, name=None):
     kwargs = {
+        "edge_model_fn": functools.partial(snt.nets.MLP, output_sizes=[5]),
+        "node_model_fn": functools.partial(snt.nets.MLP, output_sizes=[10]),
+        "global_model_fn": functools.partial(snt.nets.MLP, output_sizes=[15]),
+    }
+    if name:
+      kwargs["name"] = name
+    return modules.GraphIndependent(**kwargs)
+
+  def _get_model_w_norm(self):
+    kwargs = {
         "edge_model_fn": functools.partial(SonnetModelForTest, output_sizes=[5]),
         "node_model_fn": functools.partial(SonnetModelForTest, output_sizes=[10]),
         "global_model_fn": functools.partial(SonnetModelForTest, output_sizes=[15]),
     }
-    if name:
-      kwargs["name"] = name
     return modules.GraphIndependent(**kwargs)
 
   @parameterized.named_parameters(
@@ -147,7 +155,7 @@ class GraphIndependentTest(GraphModuleTest):
   def test_same_as_subblocks(self, edge_kw, node_kw, global_kw):
     """Compares the output to explicit subblocks output."""
     input_graph = self._get_input_graph()
-    model = self._get_model()
+    model = self._get_model_w_norm()
     output_graph = utils_tf.nest_to_numpy(
         model(input_graph, edge_kw, node_kw, global_kw))
 
