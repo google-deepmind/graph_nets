@@ -67,6 +67,17 @@ SMALL_GRAPH_4 = {
 }
 
 
+class SonnetModelForTest(snt.Module):
+  """Sonnet module for tests."""
+
+  def __init__(self, output_sizes, name="SonnetModelForTest"):
+    super(SonnetModelForTest, self).__init__(name=name)
+    self._mlp = snt.nets.MLP(output_sizes)
+    self._normalization = snt.LayerNorm(-1, False, False)
+
+  def __call__(self, x, scale=None, offset=None):
+    return self._normalization(self._mlp(x), scale, offset)
+
 class GraphModuleTest(tf.test.TestCase, parameterized.TestCase):
   """Base class for all the tests in this file."""
 
@@ -115,23 +126,34 @@ class GraphIndependentTest(GraphModuleTest):
 
   def _get_model(self, name=None):
     kwargs = {
-        "edge_model_fn": functools.partial(snt.nets.MLP, output_sizes=[5]),
-        "node_model_fn": functools.partial(snt.nets.MLP, output_sizes=[10]),
-        "global_model_fn": functools.partial(snt.nets.MLP, output_sizes=[15]),
+        "edge_model_fn": functools.partial(SonnetModelForTest, output_sizes=[5]),
+        "node_model_fn": functools.partial(SonnetModelForTest, output_sizes=[10]),
+        "global_model_fn": functools.partial(SonnetModelForTest, output_sizes=[15]),
     }
     if name:
       kwargs["name"] = name
     return modules.GraphIndependent(**kwargs)
 
-  def test_same_as_subblocks(self):
+  @parameterized.named_parameters(
+      ("without arguments", {"scale": None}, {"scale": None}, {"scale": None}),
+      ("edge scale", {"scale": 2}, {"scale": None}, {"scale": None}),
+      ("edge and node scale", {"scale": 2}, {"scale": 2}, {"scale": None}),
+      ("edge and global scale", {"scale": 2}, {"scale": None}, {"scale": 2}),
+      ("node and global scale", {"scale": None}, {"scale": 2}, {"scale": 2}),
+      ("node, edge, and global scale", {"scale": 2}, {"scale": 2}, {"scale": 2}),
+      ("node, edge, and global scale and offset", {"scale": 2, "offset": 1},
+          {"scale": .5, "offset": .25}, {"scale": 3, "offset": 1.5}),
+  )
+  def test_same_as_subblocks(self, edge_kw, node_kw, global_kw):
     """Compares the output to explicit subblocks output."""
     input_graph = self._get_input_graph()
     model = self._get_model()
-    output_graph = utils_tf.nest_to_numpy(model(input_graph))
+    output_graph = utils_tf.nest_to_numpy(
+        model(input_graph, edge_kw, node_kw, global_kw))
 
-    expected_output_edges = model._edge_model(input_graph.edges).numpy()
-    expected_output_nodes = model._node_model(input_graph.nodes).numpy()
-    expected_output_globals = model._global_model(input_graph.globals).numpy()
+    expected_output_edges = model._edge_model(input_graph.edges, **edge_kw).numpy()
+    expected_output_nodes = model._node_model(input_graph.nodes, **node_kw).numpy()
+    expected_output_globals = model._global_model(input_graph.globals, **global_kw).numpy()
 
     self._assert_all_none_or_all_close(expected_output_edges,
                                        output_graph.edges)
