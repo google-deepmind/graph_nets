@@ -528,7 +528,7 @@ class CommNet(_base.AbstractModule):
           use_globals=False,
           received_edges_reducer=reducer)
 
-  def _build(self, graph, edge_kw={}, node_kw={}):
+  def _build(self, graph, edge_kw={}, node_encoder_kw={}, node_kw={}):
     """Connects the CommNet network.
 
     Args:
@@ -544,8 +544,8 @@ class CommNet(_base.AbstractModule):
       ValueError: if any of `graph.nodes`, `graph.receivers` or `graph.senders`
       is `None`.
     """
-    node_input = self._node_encoder_block(self._edge_block(graph, **edge_kw), **node_kw)
-    return graph.replace(nodes=self._node_block(node_input).nodes)
+    node_input = self._node_encoder_block(self._edge_block(graph, **edge_kw), **node_encoder_kw)
+    return graph.replace(nodes=self._node_block(node_input, **node_kw).nodes)
 
 
 def _unsorted_segment_softmax(data,
