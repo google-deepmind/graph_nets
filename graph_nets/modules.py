@@ -118,7 +118,7 @@ class InteractionNetwork(_base.AbstractModule):
           use_globals=False,
           received_edges_reducer=reducer)
 
-  def _build(self, graph, edge_kw={}, node_kw={}):
+  def _build(self, graph, edge_model_kwargs=None, node_model_kwargs=None):
     """Connects the InterationNetwork.
 
     Args:
@@ -126,8 +126,8 @@ class InteractionNetwork(_base.AbstractModule):
         `None`. The features of each node and edge of `graph` must be
         concatenable on the last axis (i.e., the shapes of `graph.nodes` and
         `graph.edges` must match but for their first and last axis).
-      edge_kw: Optional keyword arguments to pass to the edge block model.
-      node_kw: Optional keyword arguments to pass to the node block model.
+      edge_model_kwargs: Optional keyword arguments to pass to the edge block model.
+      node_model_kwargs: Optional keyword arguments to pass to the node block model.
 
     Returns:
       An output `graphs.GraphsTuple` with updated edges and nodes.
@@ -136,7 +136,11 @@ class InteractionNetwork(_base.AbstractModule):
       ValueError: If any of `graph.nodes`, `graph.edges`, `graph.receivers` or
         `graph.senders` is `None`.
     """
-    return self._node_block(self._edge_block(graph, **edge_kw), **node_kw)
+    if edge_model_kwargs is None:
+      edge_model_kwargs = {}
+    if node_model_kwargs is None:
+      node_model_kwargs = {}
+    return self._node_block(self._edge_block(graph, edge_model_kwargs), node_model_kwargs)
 
 
 class RelationNetwork(_base.AbstractModule):
@@ -184,14 +188,14 @@ class RelationNetwork(_base.AbstractModule):
           use_globals=False,
           edges_reducer=reducer)
 
-  def _build(self, graph, edge_kw={}, global_kw={}):
+  def _build(self, graph, edge_model_kwargs=None, global_model_kwargs=None):
     """Connects the RelationNetwork.
 
     Args:
       graph: A `graphs.GraphsTuple` containing `Tensor`s, except for the edges
         and global properties which may be `None`.
-      edge_kw: Optional keyword arguments to pass to the edge block model.
-      global_kw: Optional keyword arguments to pass to the global block model.
+      edge_model_kwargs: Optional keyword arguments to pass to the edge block model.
+      global_model_kwargs: Optional keyword arguments to pass to the global block model.
 
     Returns:
       A `graphs.GraphsTuple` with updated globals.
@@ -200,7 +204,11 @@ class RelationNetwork(_base.AbstractModule):
       ValueError: If any of `graph.nodes`, `graph.receivers` or `graph.senders`
         is `None`.
     """
-    output_graph = self._global_block(self._edge_block(graph, **edge_kw), **global_kw)
+    if edge_model_kwargs == None:
+      edge_model_kwargs = {}
+    if global_model_kwargs == None:
+      global_model_kwargs = {}
+    output_graph = self._global_block(self._edge_block(graph, edge_model_kwargs), global_model_kwargs)
     return graph.replace(globals=output_graph.globals)
 
 
@@ -289,7 +297,7 @@ class GraphNetwork(_base.AbstractModule):
       self._global_block = blocks.GlobalBlock(
           global_model_fn=global_model_fn, **global_block_opt)
 
-  def _build(self, graph, edge_kw={}, node_kw={}, global_kw={}):
+  def _build(self, graph, edge_model_kwargs=None, node_model_kwargs=None, global_model_kwargs=None):
     """Connects the GraphNetwork.
 
     Args:
@@ -298,14 +306,21 @@ class GraphNetwork(_base.AbstractModule):
         configuration, no `None` field is allowed. Moreover, when using the
         default configuration, the features of each nodes, edges and globals of
         `graph` should be concatenable on the last dimension.
-      edge_keys: Optional keyword arguments to pass to the edge block model.
-      node_keys: Optional keyword arguments to pass to the node block model.
-      global_keys: Optional keyword arguments to pass to the global block model.
+      edge_model_kwargs: Optional keyword arguments to pass to the edge block model.
+      node_model_kwargs: Optional keyword arguments to pass to the node block model.
+      global_model_kwargs: Optional keyword arguments to pass to the global block model.
 
     Returns:
       An output `graphs.GraphsTuple` with updated edges, nodes and globals.
     """
-    return self._global_block(self._node_block(self._edge_block(graph, **edge_kw), **node_kw), **global_kw)
+    if edge_model_kwargs == None:
+      edge_model_kwargs = {}
+    if node_model_kwargs == None:
+      node_model_kwargs = {}
+    if global_model_kwargs == None:
+      global_model_kwargs = {}
+    return self._global_block(
+        self._node_block(self._edge_block(graph, edge_model_kwargs), node_model_kwargs), global_model_kwargs)
 
 
 class GraphIndependent(_base.AbstractModule):
@@ -358,24 +373,30 @@ class GraphIndependent(_base.AbstractModule):
         self._global_model = _base.WrappedModelFnModule(
             global_model_fn, name="global_model")
 
-  def _build(self, graph, edge_kw={}, node_kw={}, global_kw={}):
+  def _build(self, graph, edge_model_kwargs=None, node_model_kwargs=None, global_model_kwargs=None):
     """Connects the GraphIndependent.
 
     Args:
       graph: A `graphs.GraphsTuple` containing non-`None` edges, nodes and
         globals.
-      edge_keys: Optional keyword arguments to pass to the edge model.
-      node_keys: Optional keyword arguments to pass to the node model.
-      global_keys: Optional keyword arguments to pass to the global model.
+      edge_model_kwargs: Optional keyword arguments to pass to the edge model.
+      node_model_kwargs: Optional keyword arguments to pass to the node model.
+      global_model_kwargs: Optional keyword arguments to pass to the global model.
 
     Returns:
       An output `graphs.GraphsTuple` with updated edges, nodes and globals.
 
     """
+    if edge_model_kwargs == None:
+      edge_model_kwargs = {}
+    if node_model_kwargs == None:
+      node_model_kwargs = {}
+    if global_model_kwargs == None:
+      global_model_kwargs = {}
     return graph.replace(
-        edges=self._edge_model(graph.edges, **edge_kw),
-        nodes=self._node_model(graph.nodes, **node_kw),
-        globals=self._global_model(graph.globals, **global_kw))
+        edges=self._edge_model(graph.edges, **edge_model_kwargs),
+        nodes=self._node_model(graph.nodes, **node_model_kwargs),
+        globals=self._global_model(graph.globals, **global_model_kwargs))
 
 
 class DeepSets(_base.AbstractModule):
@@ -441,7 +462,7 @@ class DeepSets(_base.AbstractModule):
           use_globals=False,
           nodes_reducer=reducer)
 
-  def _build(self, graph, node_kw={}, global_kw={}):
+  def _build(self, graph, node_model_kwargs=None, global_model_kwargs=None):
     """Connects the DeepSets network.
 
     Args:
@@ -450,13 +471,17 @@ class DeepSets(_base.AbstractModule):
         global of `graph` should be concatenable on the last axis (i.e. the
         shapes of `graph.nodes` and `graph.globals` must match but for their
         first and last axis).
-      node_keys: Optional keyword arguments to pass to the node block model.
-      global_keys: Optional keyword arguments to pass to the global block model.
+      node_model_kwargs: Optional keyword arguments to pass to the node block model.
+      global_model_kwargs: Optional keyword arguments to pass to the global block model.
 
     Returns:
       An output `graphs.GraphsTuple` with updated globals.
     """
-    return self._global_block(self._node_block(graph, **node_kw), **global_kw)
+    if node_model_kwargs == None:
+      node_model_kwargs = {}
+    if global_model_kwargs == None:
+      global_model_kwargs = {}
+    return self._global_block(self._node_block(graph, node_model_kwargs), global_model_kwargs)
 
 
 class CommNet(_base.AbstractModule):
@@ -528,14 +553,15 @@ class CommNet(_base.AbstractModule):
           use_globals=False,
           received_edges_reducer=reducer)
 
-  def _build(self, graph, edge_kw={}, node_encoder_kw={}, node_kw={}):
+  def _build(self, graph, edge_model_kwargs=None, node_encoder_model_kwargs=None, node_model_kwargs=None):
     """Connects the CommNet network.
 
     Args:
       graph: A `graphs.GraphsTuple` containing `Tensor`s, with non-`None` nodes,
         receivers and senders.
-      edge_keys: Optional keyword arguments to pass to the edge block model.
-      node_keys: Optional keyword arguments to pass to the node block model.
+      edge_model_kwargs: Optional keyword arguments to pass to the edge block model.
+      node_encoder_model_kwargs: Optional keyword arguments to pass to the node block ecoder model.
+      node_model_kwargs: Optional keyword arguments to pass to the node block model.
 
     Returns:
       An output `graphs.GraphsTuple` with updated nodes.
@@ -544,8 +570,14 @@ class CommNet(_base.AbstractModule):
       ValueError: if any of `graph.nodes`, `graph.receivers` or `graph.senders`
       is `None`.
     """
-    node_input = self._node_encoder_block(self._edge_block(graph, **edge_kw), **node_encoder_kw)
-    return graph.replace(nodes=self._node_block(node_input, **node_kw).nodes)
+    if edge_model_kwargs == None:
+      edge_model_kwargs = {}
+    if node_encoder_model_kwargs == None:
+      node_encoder_model_kwargs = {}
+    if node_model_kwargs == None:
+      node_model_kwargs = {}
+    node_input = self._node_encoder_block(self._edge_block(graph, edge_model_kwargs), node_encoder_model_kwargs)
+    return graph.replace(nodes=self._node_block(node_input, node_model_kwargs).nodes)
 
 
 def _unsorted_segment_softmax(data,

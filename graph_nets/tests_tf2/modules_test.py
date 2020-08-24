@@ -67,17 +67,6 @@ SMALL_GRAPH_4 = {
 }
 
 
-class ModelWithNorm(snt.Module):
-  """Sonnet module for tests using arguments."""
-
-  def __init__(self, output_sizes, name="ModelWithNorm"):
-    super(ModelWithNorm, self).__init__(name=name)
-    self._mlp = snt.nets.MLP(output_sizes)
-    self._normalization = snt.LayerNorm(-1, False, False)
-
-  def __call__(self, x, scale=None, offset=None):
-    return self._normalization(self._mlp(x), scale, offset)
-
 class GraphModuleTest(tf.test.TestCase, parameterized.TestCase):
   """Base class for all the tests in this file."""
 
@@ -134,28 +123,20 @@ class GraphIndependentTest(GraphModuleTest):
       kwargs["name"] = name
     return modules.GraphIndependent(**kwargs)
 
-  def _get_model_w_norm(self):
+  def _get_norm_model(self):
     kwargs = {
-        "edge_model_fn": functools.partial(ModelWithNorm, output_sizes=[5]),
-        "node_model_fn": functools.partial(ModelWithNorm, output_sizes=[10]),
-        "global_model_fn": functools.partial(ModelWithNorm, output_sizes=[15]),
     }
     return modules.GraphIndependent(**kwargs)
 
-  @parameterized.named_parameters(
-      ("with scale and offset", {"scale": 2, "offset": 1},
-       {"scale": .5, "offset": .25}, {"scale": 3, "offset": 1.5})
-  )
-  def test_same_as_subblocks(self, edge_kw, node_kw, global_kw):
+  def test_same_as_subblocks(self):
     """Compares the output to explicit subblocks output."""
     input_graph = self._get_input_graph()
-    model = self._get_model_w_norm()
-    output_graph = utils_tf.nest_to_numpy(
-        model(input_graph, edge_kw, node_kw, global_kw))
+    model = self._get_model()
+    output_graph = utils_tf.nest_to_numpy(model(input_graph))
 
-    expected_output_edges = model._edge_model(input_graph.edges, **edge_kw).numpy()
-    expected_output_nodes = model._node_model(input_graph.nodes, **node_kw).numpy()
-    expected_output_globals = model._global_model(input_graph.globals, **global_kw).numpy()
+    expected_output_edges = model._edge_model(input_graph.edges).numpy()
+    expected_output_nodes = model._node_model(input_graph.nodes).numpy()
+    expected_output_globals = model._global_model(input_graph.globals).numpy()
 
     self._assert_all_none_or_all_close(expected_output_edges,
                                        output_graph.edges)
@@ -163,6 +144,44 @@ class GraphIndependentTest(GraphModuleTest):
                                        output_graph.nodes)
     self._assert_all_none_or_all_close(expected_output_globals,
                                        output_graph.globals)
+
+  @parameterized.named_parameters(
+      ("with scale and offset", {"scale": 2, "offset": 1},
+       {"scale": .5, "offset": .25}, {"scale": 3, "offset": 1.5})
+  )
+  def test_kwargs(self, edge_model_kwargs, node_model_kwargs, global_model_kwargs):
+    """Compares the output to expected output graph using kwargs."""
+    input_graph = self._get_input_graph()
+
+    edge_model_fn = functools.partial(
+        snt.LayerNorm, axis=1, create_scale=False, create_offset=False)
+    edge_model_fn_with_params = lambda: functools.partial(
+        edge_model_fn(), scale=edge_model_kwargs["scale"], offset=edge_model_kwargs["offset"])
+
+    node_model_fn = functools.partial(
+        snt.LayerNorm, axis=1, create_scale=False, create_offset=False)
+    node_model_fn_with_params = lambda: functools.partial(
+        node_model_fn(), scale=node_model_kwargs["scale"], offset=node_model_kwargs["offset"])
+
+    global_model_fn = functools.partial(
+        snt.LayerNorm, axis=1, create_scale=False, create_offset=False)
+    global_model_fn_with_params = lambda: functools.partial(
+        global_model_fn(), scale=global_model_kwargs["scale"], offset=global_model_kwargs["offset"])
+
+    model = modules.GraphIndependent(edge_model_fn, node_model_fn, global_model_fn)
+    model_with_params = modules.GraphIndependent(
+      edge_model_fn_with_params, node_model_fn_with_params, global_model_fn_with_params)
+
+    output_graph = utils_tf.nest_to_numpy(
+        model(input_graph, edge_model_kwargs, node_model_kwargs, global_model_kwargs))
+    expected_graph = utils_tf.nest_to_numpy(model_with_params(input_graph))
+
+    self.assertAllEqual(expected_graph.receivers, output_graph.receivers,)
+    self.assertAllEqual(expected_graph.senders, output_graph.senders)
+
+    self._assert_all_none_or_all_close(expected_graph.edges, output_graph.edges)
+    self._assert_all_none_or_all_close(expected_graph.nodes, output_graph.nodes)
+    self._assert_all_none_or_all_close(expected_graph.globals, output_graph.globals)
 
   @parameterized.named_parameters(
       ("default name", None), ("custom name", "custom_name"))
@@ -266,28 +285,23 @@ class GraphNetworkTest(GraphModuleTest):
     self.assertDictEqual(expected_var_shapes_dict, var_shapes_dict)
 
   @parameterized.named_parameters(
-      ("scale and offset with reduce sum reduction", tf.math.unsorted_segment_sum, False,
-       {"scale": [2], "offset": [1]}, {"scale": [.5], "offset": [.25]}, {"scale": [3], "offset": [1.5]}),
-      ("scale and offset with reduce sum reduction with tf.function", tf.math.unsorted_segment_sum, True,
-       {"scale": [2], "offset": [1]}, {"scale": [.5], "offset": [.25]}, {"scale": [3], "offset": [1.5]}),
-      ("scale and offset with reduce max or zero reduction with tf.function", blocks.unsorted_segment_max_or_zero, True,
-       {"scale": [2], "offset": [1]}, {"scale": [.5], "offset": [.25]}, {"scale": [3], "offset": [1.5]})
-  )
-  def test_same_as_subblocks(self, reducer, use_tf_function, edge_kw, node_kw, global_kw):
+      ("reduce sum reduction", tf.math.unsorted_segment_sum, False),
+      ("reduce sum reduction with tf.function", tf.math.unsorted_segment_sum,
+       True),
+      ("reduce max or zero reduction", blocks.unsorted_segment_max_or_zero,
+       True),)
+  def test_same_as_subblocks(self, reducer, use_tf_function):
     """Compares the output to explicit subblocks output.
 
     Args:
       reducer: The reducer used in the `NodeBlock` and `GlobalBlock`.
       use_tf_function: Whether to compile the model with `tf.function`.
-      edge_kw: Optional arguments for `EdgeBlock`.
-      node_kw: Optional arguments for `NodeBlock`.
-      global_kw: Optional arguments for `GlobalBlock`.
     """
     input_graph = self._get_input_graph()
 
-    edge_model_fn = functools.partial(ModelWithNorm, output_sizes=[5])
-    node_model_fn = functools.partial(ModelWithNorm, output_sizes=[10])
-    global_model_fn = functools.partial(ModelWithNorm, output_sizes=[15])
+    edge_model_fn = functools.partial(snt.Linear, output_size=5)
+    node_model_fn = functools.partial(snt.Linear, output_size=10)
+    global_model_fn = functools.partial(snt.Linear, output_size=15)
 
     graph_network = modules.GraphNetwork(
         edge_model_fn=edge_model_fn,
@@ -295,20 +309,13 @@ class GraphNetworkTest(GraphModuleTest):
         global_model_fn=global_model_fn,
         reducer=reducer)
 
-    # print(utils_tf.specs_from_graphs_tuple(input_graph))
     if use_tf_function:
-      input_signature = [utils_tf.specs_from_graphs_tuple(input_graph),
-                         {"scale": tf.TensorSpec(1, name="scale"),
-                          "offset": tf.TensorSpec(1, name="scale")},
-                         {"scale": tf.TensorSpec(1, name="scale"),
-                          "offset": tf.TensorSpec(1, name="scale")},
-                         {"scale": tf.TensorSpec(1, name="scale"),
-                          "offset": tf.TensorSpec(1, name="scale")}]
+      input_signature = [utils_tf.specs_from_graphs_tuple(input_graph)]
       graph_network_fn = tf.function(graph_network, input_signature)
     else:
       graph_network_fn = graph_network
 
-    output_graph = graph_network_fn(input_graph, edge_kw, node_kw, global_kw)
+    output_graph = graph_network_fn(input_graph)
 
     edge_block = blocks.EdgeBlock(
         edge_model_fn=lambda: graph_network._edge_block._edge_model,
@@ -331,9 +338,9 @@ class GraphNetworkTest(GraphModuleTest):
         edges_reducer=reducer,
         nodes_reducer=reducer)
 
-    expected_output_edge_block = edge_block(input_graph, **edge_kw)
-    expected_output_node_block = node_block(expected_output_edge_block, **node_kw)
-    expected_output_global_block = global_block(expected_output_node_block, **global_kw)
+    expected_output_edge_block = edge_block(input_graph)
+    expected_output_node_block = node_block(expected_output_edge_block)
+    expected_output_global_block = global_block(expected_output_node_block)
     expected_edges = expected_output_edge_block.edges.numpy()
     expected_nodes = expected_output_node_block.nodes.numpy()
     expected_globals = expected_output_global_block.globals.numpy()
@@ -344,6 +351,44 @@ class GraphNetworkTest(GraphModuleTest):
                                        output_graph.nodes.numpy())
     self._assert_all_none_or_all_close(expected_globals,
                                        output_graph.globals.numpy())
+
+  @parameterized.named_parameters(
+      ("with scale and offset", {"scale": 2, "offset": 1},
+       {"scale": .5, "offset": .25}, {"scale": 3, "offset": 1.5})
+  )
+  def test_kwargs(self, edge_model_kwargs, node_model_kwargs, global_model_kwargs):
+    """Compares the output to expected output graph using kwargs."""
+    input_graph = self._get_input_graph()
+
+    edge_model_fn = functools.partial(
+        snt.LayerNorm, axis=1, create_scale=False, create_offset=False)
+    edge_model_fn_with_params = lambda: functools.partial(
+        edge_model_fn(), scale=edge_model_kwargs["scale"], offset=edge_model_kwargs["offset"])
+
+    node_model_fn = functools.partial(
+        snt.LayerNorm, axis=1, create_scale=False, create_offset=False)
+    node_model_fn_with_params = lambda: functools.partial(
+        node_model_fn(), scale=node_model_kwargs["scale"], offset=node_model_kwargs["offset"])
+
+    global_model_fn = functools.partial(
+        snt.LayerNorm, axis=1, create_scale=False, create_offset=False)
+    global_model_fn_with_params = lambda: functools.partial(
+        global_model_fn(), scale=global_model_kwargs["scale"], offset=global_model_kwargs["offset"])
+
+    model = modules.GraphNetwork(edge_model_fn, node_model_fn, global_model_fn)
+    model_with_params = modules.GraphNetwork(
+      edge_model_fn_with_params, node_model_fn_with_params, global_model_fn_with_params)
+
+    output_graph = utils_tf.nest_to_numpy(
+        model(input_graph, edge_model_kwargs, node_model_kwargs, global_model_kwargs))
+    expected_graph = utils_tf.nest_to_numpy(model_with_params(input_graph))
+
+    self.assertAllEqual(expected_graph.receivers, output_graph.receivers,)
+    self.assertAllEqual(expected_graph.senders, output_graph.senders)
+
+    self._assert_all_none_or_all_close(expected_graph.edges, output_graph.edges)
+    self._assert_all_none_or_all_close(expected_graph.nodes, output_graph.nodes)
+    self._assert_all_none_or_all_close(expected_graph.globals, output_graph.globals)
 
   def test_dynamic_batch_sizes(self):
     """Checks that all batch sizes are as expected through a GraphNetwork."""
@@ -643,15 +688,6 @@ class InteractionNetworkTest(GraphModuleTest):
       kwargs["name"] = name
     return modules.InteractionNetwork(**kwargs)
 
-  def _get_model_w_norm(self, reducer=None):
-    kwargs = {
-        "edge_model_fn": functools.partial(ModelWithNorm, output_sizes=[5]),
-        "node_model_fn": functools.partial(ModelWithNorm, output_sizes=[10]),
-    }
-    if reducer:
-      kwargs["reducer"] = reducer
-    return modules.InteractionNetwork(**kwargs)
-
   @parameterized.named_parameters(
       ("default name", None), ("custom name", "custom_name"))
   def test_created_variables(self, name=None):
@@ -672,27 +708,22 @@ class InteractionNetworkTest(GraphModuleTest):
     self.assertDictEqual(expected_var_shapes_dict, var_shapes_dict)
 
   @parameterized.named_parameters(
-      ("scale and offset with default", tf.math.unsorted_segment_sum,
-       {"scale": [2], "offset": [1]}, {"scale": [.5], "offset": [.25]}),
-      ("scale and offset with max or zero reduction", blocks.unsorted_segment_max_or_zero,
-       {"scale": [2], "offset": [1]}, {"scale": [.5], "offset": [.25]}),
-      ("scale and offset with no globals", tf.math.unsorted_segment_sum,
-       {"scale": [2], "offset": [1]}, {"scale": [.5], "offset": [.25]}, "globals")
+      ("default", tf.math.unsorted_segment_sum,),
+      ("max or zero reduction", blocks.unsorted_segment_max_or_zero,),
+      ("no globals", tf.math.unsorted_segment_sum, "globals"),
   )
-  def test_same_as_subblocks(self, reducer, edge_kw, node_kw, none_field=None):
+  def test_same_as_subblocks(self, reducer, none_field=None):
     """Compares the output to explicit subblocks output.
 
     Args:
       reducer: The reducer used in the `NodeBlock`s.
-      edge_kw: Optional arguments for `EdgeBlock`.
-      node_kw: Optional arguments for `NodeBlock`.
       none_field: (string, default=None) If not None, the corresponding field
         is removed from the input graph.
     """
     input_graph = self._get_input_graph(none_field)
 
-    interaction_network = self._get_model_w_norm(reducer)
-    output_graph = interaction_network(input_graph, edge_kw, node_kw)
+    interaction_network = self._get_model(reducer)
+    output_graph = interaction_network(input_graph)
     edges_out = output_graph.edges.numpy()
     nodes_out = output_graph.nodes.numpy()
     self.assertAllEqual(input_graph.globals, output_graph.globals)
@@ -711,13 +742,45 @@ class InteractionNetworkTest(GraphModuleTest):
         use_globals=False,
         received_edges_reducer=reducer)
 
-    expected_output_edge_block = edge_block(input_graph, **edge_kw)
-    expected_output_node_block = node_block(expected_output_edge_block, **node_kw)
+    expected_output_edge_block = edge_block(input_graph)
+    expected_output_node_block = node_block(expected_output_edge_block)
     expected_edges = expected_output_edge_block.edges.numpy()
     expected_nodes = expected_output_node_block.nodes.numpy()
 
     self._assert_all_none_or_all_close(expected_edges, edges_out)
     self._assert_all_none_or_all_close(expected_nodes, nodes_out)
+
+  @parameterized.named_parameters(
+      ("with scale and offset", {"scale": 2, "offset": 1}, {"scale": .5, "offset": .25})
+  )
+  def test_kwargs(self, edge_model_kwargs, node_model_kwargs):
+    """Compares the output to expected output graph using kwargs."""
+    input_graph = self._get_input_graph()
+
+    edge_model_fn = functools.partial(
+        snt.LayerNorm, axis=1, create_scale=False, create_offset=False)
+    edge_model_fn_with_params = lambda: functools.partial(
+        edge_model_fn(), scale=edge_model_kwargs["scale"], offset=edge_model_kwargs["offset"])
+
+    node_model_fn = functools.partial(
+        snt.LayerNorm, axis=1, create_scale=False, create_offset=False)
+    node_model_fn_with_params = lambda: functools.partial(
+        node_model_fn(), scale=node_model_kwargs["scale"], offset=node_model_kwargs["offset"])
+
+    model = modules.InteractionNetwork(edge_model_fn, node_model_fn)
+    model_with_params = modules.InteractionNetwork(
+      edge_model_fn_with_params, node_model_fn_with_params)
+
+    output_graph = utils_tf.nest_to_numpy(
+        model(input_graph, edge_model_kwargs, node_model_kwargs))
+    expected_graph = utils_tf.nest_to_numpy(model_with_params(input_graph))
+
+    self.assertAllEqual(expected_graph.globals, output_graph.globals)
+    self.assertAllEqual(expected_graph.receivers, output_graph.receivers,)
+    self.assertAllEqual(expected_graph.senders, output_graph.senders)
+
+    self._assert_all_none_or_all_close(expected_graph.edges, output_graph.edges)
+    self._assert_all_none_or_all_close(expected_graph.nodes, output_graph.nodes)
 
   @parameterized.named_parameters(
       ("no nodes", ["nodes"],),
@@ -776,15 +839,6 @@ class RelationNetworkTest(GraphModuleTest):
       kwargs["name"] = name
     return modules.RelationNetwork(**kwargs)
 
-  def _get_model_w_norm(self, reducer=None):
-    kwargs = {
-        "edge_model_fn": functools.partial(ModelWithNorm, output_sizes=[5]),
-        "global_model_fn": functools.partial(ModelWithNorm, output_sizes=[15]),
-    }
-    if reducer:
-      kwargs["reducer"] = reducer
-    return modules.RelationNetwork(**kwargs)
-
   @parameterized.named_parameters(
       ("default name", None), ("custom name", "custom_name"))
   def test_created_variables(self, name=None):
@@ -805,28 +859,22 @@ class RelationNetworkTest(GraphModuleTest):
     self.assertDictEqual(expected_var_shapes_dict, var_shapes_dict)
 
   @parameterized.named_parameters(
-      ("scale and offset with default", tf.math.unsorted_segment_sum,
-       {"scale": [2], "offset": [1]}, {"scale": [.5], "offset": [.25]}),
-      ("scale and offset with max or zero reduction", blocks.unsorted_segment_max_or_zero,
-       {"scale": [2], "offset": [1]}, {"scale": [.5], "offset": [.25]}),
-      ("scale and offset with no edges", tf.math.unsorted_segment_sum,
-       {"scale": [2], "offset": [1]}, {"scale": [.5], "offset": [.25]}, "edges"),
-      ("scale and offset with no globals", tf.math.unsorted_segment_sum,
-       {"scale": [2], "offset": [1]}, {"scale": [.5], "offset": [.25]}, "globals")
+      ("default", tf.math.unsorted_segment_sum, None),
+      ("max or zero reduction", blocks.unsorted_segment_max_or_zero, None),
+      ("no edges", tf.math.unsorted_segment_sum, "edges"),
+      ("no globals", tf.math.unsorted_segment_sum, "globals"),
   )
-  def test_same_as_subblocks(self, reducer, edge_kw, global_kw, none_field=None):
+  def test_same_as_subblocks(self, reducer, none_field=None):
     """Compares the output to explicit subblocks output.
 
     Args:
       reducer: The reducer used in the `GlobalBlock`.
-      edge_kw: Optional arguments for `EdgeBlock`.
-      global_kw: Optional arguments for `GlobalBlock`.
       none_field: (string, default=None) If not None, the corresponding field
         is removed from the input graph.
     """
     input_graph = self._get_input_graph(none_field)
-    relation_network = self._get_model_w_norm(reducer)
-    output_graph = relation_network(input_graph, edge_kw, global_kw)
+    relation_network = self._get_model(reducer)
+    output_graph = relation_network(input_graph)
 
     edge_block = blocks.EdgeBlock(
         edge_model_fn=lambda: relation_network._edge_block._edge_model,
@@ -842,8 +890,8 @@ class RelationNetworkTest(GraphModuleTest):
         edges_reducer=reducer,
         nodes_reducer=reducer)
 
-    expected_output_edge_block = edge_block(input_graph, **edge_kw)
-    expected_output_global_block = global_block(expected_output_edge_block, **global_kw)
+    expected_output_edge_block = edge_block(input_graph)
+    expected_output_global_block = global_block(expected_output_edge_block)
 
     self.assertIs(input_graph.edges, output_graph.edges)
     self.assertIs(input_graph.nodes, output_graph.nodes)
@@ -851,6 +899,38 @@ class RelationNetworkTest(GraphModuleTest):
     self._assert_all_none_or_all_close(
         output_graph.globals.numpy(),
         expected_output_global_block.globals.numpy())
+
+  @parameterized.named_parameters(
+      ("with scale and offset", {"scale": 2, "offset": 1}, {"scale": .5, "offset": .25})
+  )
+  def test_kwargs(self, edge_model_kwargs, global_model_kwargs):
+    """Compares the output to expected output graph using kwargs."""
+    input_graph = self._get_input_graph()
+
+    edge_model_fn = functools.partial(
+        snt.LayerNorm, axis=1, create_scale=False, create_offset=False)
+    edge_model_fn_with_params = lambda: functools.partial(
+        edge_model_fn(), scale=edge_model_kwargs["scale"], offset=edge_model_kwargs["offset"])
+
+    global_model_fn = functools.partial(
+        snt.LayerNorm, axis=1, create_scale=False, create_offset=False)
+    global_model_fn_with_params = lambda: functools.partial(
+        global_model_fn(), scale=global_model_kwargs["scale"], offset=global_model_kwargs["offset"])
+
+    model = modules.RelationNetwork(edge_model_fn, global_model_fn)
+    model_with_params = modules.RelationNetwork(
+      edge_model_fn_with_params, global_model_fn_with_params)
+
+    output_graph = utils_tf.nest_to_numpy(
+        model(input_graph, edge_model_kwargs, global_model_kwargs))
+    expected_graph = utils_tf.nest_to_numpy(model_with_params(input_graph))
+
+    self.assertAllEqual(expected_graph.edges, output_graph.edges)
+    self.assertAllEqual(expected_graph.nodes, output_graph.nodes)
+    self.assertAllEqual(expected_graph.senders, expected_graph.senders)
+    self.assertAllEqual(expected_graph.edges, output_graph.edges)
+
+    self._assert_all_none_or_all_close(expected_graph.globals, output_graph.globals)
 
   @parameterized.named_parameters(
       ("no nodes", ["nodes"],), ("no edges", ["edges", "receivers", "senders"],)
@@ -890,15 +970,6 @@ class DeepSetsTest(GraphModuleTest):
       kwargs["name"] = name
     return modules.DeepSets(**kwargs)
 
-  def _get_model_w_norm(self, reducer=None):
-    kwargs = {
-        "node_model_fn": functools.partial(ModelWithNorm, output_sizes=[10]),
-        "global_model_fn": functools.partial(ModelWithNorm, output_sizes=[15]),
-    }
-    if reducer:
-      kwargs["reducer"] = reducer
-    return modules.DeepSets(**kwargs)
-
   @parameterized.named_parameters(
       ("default name", None), ("custom name", "custom_name"))
   def test_created_variables(self, name=None):
@@ -919,31 +990,26 @@ class DeepSetsTest(GraphModuleTest):
     self.assertDictEqual(expected_var_shapes_dict, var_shapes_dict)
 
   @parameterized.named_parameters(
-      ("scale and offset with default", tf.math.unsorted_segment_sum,
-       {"scale": [2], "offset": [1]}, {"scale": [.5], "offset": [.25]}, []),
-      ("scale and offset with no edge data", tf.math.unsorted_segment_sum,
-       {"scale": [2], "offset": [1]}, {"scale": [.5], "offset": [.25]}, ["edges"]),
-      ("scale and offset with no edges", tf.math.unsorted_segment_sum,
-       {"scale": [2], "offset": [1]}, {"scale": [.5], "offset": [.25]}, ["edges", "receivers", "senders"]),
-      ("scale and offset with max or zero reduction", blocks.unsorted_segment_max_or_zero,
-       {"scale": [2], "offset": [1]}, {"scale": [.5], "offset": [.25]}, [])
+      ("default", tf.math.unsorted_segment_sum, []),
+      ("no edge data", tf.math.unsorted_segment_sum, ["edges"]),
+      ("no edges", tf.math.unsorted_segment_sum,
+       ["edges", "receivers", "senders"]),
+      ("max or zero reduction", blocks.unsorted_segment_max_or_zero, []),
   )
-  def test_same_as_subblocks(self, reducer, node_kw, global_kw, none_fields):
+  def test_same_as_subblocks(self, reducer, none_fields):
     """Compares the output to explicit subblocks output.
 
     Args:
       reducer: The reducer used in the NodeBlock.
-      node_kw: Optional arguments for `NodeBlock`.
-      global_kw: Optional arguments for `GlobalBlock`.
       none_fields: (list of strings) The corresponding fields are removed from
         the input graph.
     """
     input_graph = self._get_input_graph()
     input_graph = input_graph.map(lambda _: None, none_fields)
 
-    deep_sets = self._get_model_w_norm(reducer)
+    deep_sets = self._get_model(reducer)
 
-    output_graph = deep_sets(input_graph, node_kw, global_kw)
+    output_graph = deep_sets(input_graph)
     output_nodes = output_graph.nodes.numpy()
     output_globals = output_graph.globals.numpy()
 
@@ -960,9 +1026,9 @@ class DeepSetsTest(GraphModuleTest):
         use_globals=False,
         nodes_reducer=reducer)
 
-    node_block_out = node_block(input_graph, **node_kw)
+    node_block_out = node_block(input_graph)
     expected_nodes = node_block_out.nodes.numpy()
-    expected_globals = global_block(node_block_out, **global_kw).globals.numpy()
+    expected_globals = global_block(node_block_out).globals.numpy()
 
     self.assertAllEqual(input_graph.edges, output_graph.edges)
     self.assertAllEqual(input_graph.receivers, output_graph.receivers)
@@ -970,6 +1036,38 @@ class DeepSetsTest(GraphModuleTest):
 
     self._assert_all_none_or_all_close(expected_nodes, output_nodes)
     self._assert_all_none_or_all_close(expected_globals, output_globals)
+
+  @parameterized.named_parameters(
+      ("with scale and offset", {"scale": .5, "offset": .25}, {"scale": 3, "offset": 1.5})
+  )
+  def test_kwargs(self, node_model_kwargs, global_model_kwargs):
+    """Compares the output to expected output graph using kwargs."""
+    input_graph = self._get_input_graph()
+
+    node_model_fn = functools.partial(
+        snt.LayerNorm, axis=1, create_scale=False, create_offset=False)
+    node_model_fn_with_params = lambda: functools.partial(
+        node_model_fn(), scale=node_model_kwargs["scale"], offset=node_model_kwargs["offset"])
+
+    global_model_fn = functools.partial(
+        snt.LayerNorm, axis=1, create_scale=False, create_offset=False)
+    global_model_fn_with_params = lambda: functools.partial(
+        global_model_fn(), scale=global_model_kwargs["scale"], offset=global_model_kwargs["offset"])
+
+    model = modules.DeepSets(node_model_fn, global_model_fn)
+    model_with_params = modules.DeepSets(
+      node_model_fn_with_params, global_model_fn_with_params)
+
+    output_graph = utils_tf.nest_to_numpy(
+        model(input_graph, node_model_kwargs, global_model_kwargs))
+    expected_graph = utils_tf.nest_to_numpy(model_with_params(input_graph))
+
+    self.assertAllEqual(expected_graph.receivers, output_graph.receivers)
+    self.assertAllEqual(expected_graph.senders, expected_graph.senders)
+    self.assertAllEqual(expected_graph.edges, output_graph.edges)
+
+    self._assert_all_none_or_all_close(expected_graph.nodes, output_graph.nodes)
+    self._assert_all_none_or_all_close(expected_graph.globals, output_graph.globals)
 
   @parameterized.parameters(
       ("nodes",), ("globals",),
@@ -1028,16 +1126,6 @@ class CommNetTest(GraphModuleTest):
       kwargs["name"] = name
     return modules.CommNet(**kwargs)
 
-  def _get_model_w_norm(self, reducer=None):
-    kwargs = {
-        "edge_model_fn": functools.partial(ModelWithNorm, output_sizes=[15]),
-        "node_encoder_model_fn": functools.partial(ModelWithNorm, output_sizes=[8]),
-        "node_model_fn": functools.partial(ModelWithNorm, output_sizes=[5]),
-    }
-    if reducer:
-      kwargs["reducer"] = reducer
-    return modules.CommNet(**kwargs)
-
   @parameterized.named_parameters(
       ("default name", None), ("custom name", "custom_name"))
   def test_created_variables(self, name=None):
@@ -1060,30 +1148,23 @@ class CommNetTest(GraphModuleTest):
     self.assertDictEqual(expected_var_shapes_dict, var_shapes_dict)
 
   @parameterized.named_parameters(
-      ("scale and offset with default", tf.math.unsorted_segment_sum,
-       {"scale": [2], "offset": [1]}, {"scale": [.5], "offset": [.25]}, {"scale": [3], "offset": [1.5]}),
-      ("scale and offset with no edge", tf.math.unsorted_segment_sum, {"scale": [2], "offset": [1]},
-       {"scale": [.5], "offset": [.25]}, {"scale": [3], "offset": [1.5]}, "edges"),
-      ("scale and offset with no globals", tf.math.unsorted_segment_sum, {"scale": [2], "offset": [1]},
-       {"scale": [.5], "offset": [.25]}, {"scale": [3], "offset": [1.5]}, "globals"),
-      ("scale and offset with max or zero reduction", blocks.unsorted_segment_max_or_zero,
-       {"scale": [2], "offset": [1]}, {"scale": [.5], "offset": [.25]}, {"scale": [3], "offset": [1.5]}),
+      ("default", tf.math.unsorted_segment_sum,),
+      ("no edges", tf.math.unsorted_segment_sum, "edges"),
+      ("no globals", tf.math.unsorted_segment_sum, "globals"),
+      ("max or zero reduction", blocks.unsorted_segment_max_or_zero,),
   )
-  def test_same_as_subblocks(self, reducer, edge_kw, node_encoder_kw, node_kw, none_field=None):
+  def test_same_as_subblocks(self, reducer, none_field=None):
     """Compares the output to explicit subblocks output.
 
     Args:
       reducer: The reducer used in the `NodeBlock`s.
-      edge_kw: Optional arguments for `EdgeBlock`.
-      node_encoder_kw: Optional arguments for node ecoder model.
-      node_kw: Optional arguments for `NodeBlock`.
       none_field: (string, default=None) If not None, the corresponding field
         is removed from the input graph.
     """
     input_graph = self._get_input_graph(none_field)
 
-    comm_net = self._get_model_w_norm(reducer)
-    output_graph = comm_net(input_graph, edge_kw, node_encoder_kw, node_kw)
+    comm_net = self._get_model(reducer)
+    output_graph = comm_net(input_graph)
     output_nodes = output_graph.nodes
 
     edge_subblock = blocks.EdgeBlock(
@@ -1107,11 +1188,11 @@ class CommNetTest(GraphModuleTest):
         use_globals=False,
         received_edges_reducer=reducer)
 
-    edge_block_out = edge_subblock(input_graph, **edge_kw)
-    encoded_nodes = node_encoder_subblock(input_graph, **node_encoder_kw).nodes
+    edge_block_out = edge_subblock(input_graph)
+    encoded_nodes = node_encoder_subblock(input_graph).nodes
     node_input_graph = input_graph.replace(
         edges=edge_block_out.edges, nodes=encoded_nodes)
-    node_block_out = node_subblock(node_input_graph, **node_kw)
+    node_block_out = node_subblock(node_input_graph)
     expected_nodes = node_block_out.nodes
 
     self.assertAllEqual(input_graph.globals, output_graph.globals)
@@ -1121,6 +1202,44 @@ class CommNetTest(GraphModuleTest):
 
     self._assert_all_none_or_all_close(
         expected_nodes.numpy(), output_nodes.numpy())
+
+  @parameterized.named_parameters(
+      ("with scale and offset", {"scale": 2, "offset": 1},
+       {"scale": .5, "offset": .25}, {"scale": 3, "offset": 1.5})
+  )
+  def test_kwargs(self, edge_model_kwargs, node_encoder_model_kwargs, node_model_kwargs):
+    """Compares the output to expected output graph using kwargs."""
+    input_graph = self._get_input_graph()
+
+    edge_model_fn = functools.partial(
+        snt.LayerNorm, axis=1, create_scale=False, create_offset=False)
+    edge_model_fn_with_params = lambda: functools.partial(
+        edge_model_fn(), scale=edge_model_kwargs["scale"], offset=edge_model_kwargs["offset"])
+
+    node_encoder_model_fn = functools.partial(
+        snt.LayerNorm, axis=1, create_scale=False, create_offset=False)
+    node_encoder_model_fn_with_params = lambda: functools.partial(
+        node_encoder_model_fn(), scale=node_encoder_model_kwargs["scale"], offset=node_encoder_model_kwargs["offset"])
+
+    node_model_fn = functools.partial(
+        snt.LayerNorm, axis=1, create_scale=False, create_offset=False)
+    node_model_fn_with_params = lambda: functools.partial(
+        node_model_fn(), scale=node_model_kwargs["scale"], offset=node_model_kwargs["offset"])
+
+    model = modules.CommNet(edge_model_fn, node_encoder_model_fn, node_model_fn)
+    model_with_params = modules.CommNet(
+      edge_model_fn_with_params, node_encoder_model_fn_with_params, node_model_fn_with_params)
+
+    output_graph = utils_tf.nest_to_numpy(
+        model(input_graph, edge_model_kwargs, node_encoder_model_kwargs, node_model_kwargs))
+    expected_graph = utils_tf.nest_to_numpy(model_with_params(input_graph))
+
+    self.assertAllEqual(expected_graph.globals, output_graph.globals)
+    self.assertAllEqual(expected_graph.edges, output_graph.edges)
+    self.assertAllEqual(expected_graph.receivers, output_graph.receivers,)
+    self.assertAllEqual(expected_graph.senders, output_graph.senders)
+
+    self._assert_all_none_or_all_close(expected_graph.nodes, output_graph.nodes)
 
   @parameterized.named_parameters(
       ("no nodes", ["nodes"],), ("no edges", ["edges", "receivers", "senders"],)

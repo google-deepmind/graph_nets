@@ -379,7 +379,6 @@ class EdgeBlockTest(GraphModuleTest):
     super(EdgeBlockTest, self).setUp()
     self._scale = 10.
     self._edge_model_fn = lambda: lambda features: features * self._scale
-    self._edge_model_args_fn = lambda: lambda features, scale, offset: features * scale + offset
 
   @parameterized.named_parameters(
       ("all inputs", True, True, True, True),
@@ -421,36 +420,6 @@ class EdgeBlockTest(GraphModuleTest):
           (output_graph, model_inputs))
 
     expected_output_edges = model_inputs_out * self._scale
-    self.assertNDArrayNear(
-        expected_output_edges, output_graph_out.edges, err=1e-4)
-
-  @parameterized.named_parameters(
-      ("only scaling", 2, 0),
-      ("only offsetting", 0, 2),
-      ("scaling and offsetting", 2, 2),
-      ("without scaling and offsetting", 1, 0),
-  )
-  def test_optional_arguments(self, scale, offset):
-    """Compares the output of an EdgeBlock to an explicit computation based on optional arguments."""
-    input_graph = self._get_input_graph()
-    edge_block = blocks.EdgeBlock(edge_model_fn=self._edge_model_args_fn)
-    output_graph = edge_block(input_graph, scale=scale, offset=offset)
-
-    model_inputs = []
-    model_inputs.append(input_graph.edges)
-    model_inputs.append(blocks.broadcast_receiver_nodes_to_edges(input_graph))
-    model_inputs.append(blocks.broadcast_sender_nodes_to_edges(input_graph))
-    model_inputs.append(blocks.broadcast_globals_to_edges(input_graph))
-
-    model_inputs = tf.concat(model_inputs, axis=-1)
-    self.assertIs(input_graph.nodes, output_graph.nodes)
-    self.assertIs(input_graph.globals, output_graph.globals)
-
-    with tf.Session() as sess:
-      output_graph_out, model_inputs_out = sess.run(
-          (output_graph, model_inputs))
-
-    expected_output_edges = model_inputs_out * scale + offset
     self.assertNDArrayNear(
         expected_output_edges, output_graph_out.edges, err=1e-4)
 
@@ -619,7 +588,6 @@ class NodeBlockTest(GraphModuleTest):
     super(NodeBlockTest, self).setUp()
     self._scale = 10.
     self._node_model_fn = lambda: lambda features: features * self._scale
-    self._node_model_args_fn = lambda: lambda features, scale, offset: features * scale + offset
 
   @parameterized.named_parameters(
       ("all inputs, custom reductions", True, True, True, True,
@@ -675,36 +643,6 @@ class NodeBlockTest(GraphModuleTest):
           (output_graph, model_inputs))
 
     expected_output_nodes = model_inputs_out * self._scale
-    self.assertNDArrayNear(
-        expected_output_nodes, output_graph_out.nodes, err=1e-4)
-
-  @parameterized.named_parameters(
-      ("only scaling", 2, 0),
-      ("only offsetting", 0, 2),
-      ("scaling and offsetting", 2, 2),
-      ("without scaling and offsetting", 1, 0),
-  )
-  def test_optional_arguments(self, scale, offset):
-    """Compares the output of a NodeBlock to an explicit computation based on optional arguments."""
-    input_graph = self._get_input_graph()
-    node_block = blocks.NodeBlock(node_model_fn=self._node_model_args_fn)
-    output_graph = node_block(input_graph, scale=scale, offset=offset)
-
-    model_inputs = []
-    model_inputs.append(
-        blocks.ReceivedEdgesToNodesAggregator(tf.math.unsorted_segment_sum)(input_graph))
-    model_inputs.append(input_graph.nodes)
-    model_inputs.append(blocks.broadcast_globals_to_nodes(input_graph))
-
-    model_inputs = tf.concat(model_inputs, axis=-1)
-    self.assertIs(input_graph.edges, output_graph.edges)
-    self.assertIs(input_graph.globals, output_graph.globals)
-
-    with tf.Session() as sess:
-      output_graph_out, model_inputs_out = sess.run(
-          (output_graph, model_inputs))
-
-    expected_output_nodes = model_inputs_out * scale + offset
     self.assertNDArrayNear(
         expected_output_nodes, output_graph_out.nodes, err=1e-4)
 
@@ -897,7 +835,6 @@ class GlobalBlockTest(GraphModuleTest):
     super(GlobalBlockTest, self).setUp()
     self._scale = 10.
     self._global_model_fn = lambda: lambda features: features * self._scale
-    self._global_model_args_fn = lambda: lambda features, scale, offset: features * scale + offset
 
   @parameterized.named_parameters(
       ("all_inputs, custom reductions",
@@ -946,37 +883,6 @@ class GlobalBlockTest(GraphModuleTest):
           (output_graph, model_inputs))
 
     expected_output_globals = model_inputs_out * self._scale
-    self.assertNDArrayNear(
-        expected_output_globals, output_graph_out.globals, err=1e-4)
-
-  @parameterized.named_parameters(
-      ("only scaling", 2, 0),
-      ("only offsetting", 0, 2),
-      ("scaling and offsetting", 2, 2),
-      ("without scaling and offsetting", 1, 0),
-  )
-  def test_optional_arguments(self, scale, offset):
-    """Compares the output of a GlobalBlock to an explicit computation based on optional arguments."""
-    input_graph = self._get_input_graph()
-    global_block = blocks.GlobalBlock(global_model_fn=self._global_model_args_fn)
-    output_graph = global_block(input_graph, scale=scale, offset=offset)
-
-    model_inputs = []
-    model_inputs.append(
-        blocks.EdgesToGlobalsAggregator(tf.math.unsorted_segment_sum)(input_graph))
-    model_inputs.append(
-        blocks.NodesToGlobalsAggregator(tf.math.unsorted_segment_sum)(input_graph))
-    model_inputs.append(input_graph.globals)
-
-    model_inputs = tf.concat(model_inputs, axis=-1)
-    self.assertIs(input_graph.edges, output_graph.edges)
-    self.assertIs(input_graph.nodes, output_graph.nodes)
-
-    with tf.Session() as sess:
-      output_graph_out, model_inputs_out = sess.run(
-          (output_graph, model_inputs))
-
-    expected_output_globals = model_inputs_out * scale + offset
     self.assertNDArrayNear(
         expected_output_globals, output_graph_out.globals, err=1e-4)
 

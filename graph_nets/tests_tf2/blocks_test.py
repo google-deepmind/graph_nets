@@ -416,21 +416,19 @@ class EdgeBlockTest(GraphModuleTest):
     """Compares the output of an EdgeBlock to an explicit computation based on optional arguments."""
     input_graph = self._get_input_graph()
     edge_block = blocks.EdgeBlock(edge_model_fn=self._edge_model_args_fn)
-    output_graph_out = edge_block(input_graph, scale=scale, offset=offset)
+    output_graph_out = edge_block(
+        input_graph, edge_model_kwargs=dict(scale=scale, offset=offset))
 
-    model_inputs = []
-    model_inputs.append(input_graph.edges)
-    model_inputs.append(blocks.broadcast_receiver_nodes_to_edges(input_graph))
-    model_inputs.append(blocks.broadcast_sender_nodes_to_edges(input_graph))
-    model_inputs.append(blocks.broadcast_globals_to_edges(input_graph))
+    fixed_scale = scale
+    fixed_offset = offset
+    model_fn = lambda: lambda features: features * fixed_scale + fixed_offset
+    hardcoded_edge_block = blocks.EdgeBlock(edge_model_fn=model_fn)
+    expected_graph_out = hardcoded_edge_block(input_graph)
 
-    model_inputs = tf.concat(model_inputs, axis=-1)
-    self.assertIs(input_graph.nodes, output_graph_out.nodes)
-    self.assertIs(input_graph.globals, output_graph_out.globals)
-
-    expected_output_edges = model_inputs * scale + offset
+    self.assertIs(expected_graph_out.nodes, output_graph_out.nodes)
+    self.assertIs(expected_graph_out.globals, output_graph_out.globals)
     self.assertNDArrayNear(
-        expected_output_edges.numpy(), output_graph_out.edges.numpy(), err=1e-4)
+        expected_graph_out.edges.numpy(), output_graph_out.edges.numpy(), err=1e-4)
 
   @parameterized.named_parameters(
       ("all inputs", True, True, True, True, 12),
@@ -665,21 +663,19 @@ class NodeBlockTest(GraphModuleTest):
     """Compares the output of a NodeBlock to an explicit computation based on optional arguments."""
     input_graph = self._get_input_graph()
     node_block = blocks.NodeBlock(node_model_fn=self._node_model_args_fn)
-    output_graph_out = node_block(input_graph, scale=scale, offset=offset)
+    output_graph_out = node_block(
+        input_graph, node_model_kwargs=dict(scale=scale, offset=offset))
 
-    model_inputs = []
-    model_inputs.append(
-        blocks.ReceivedEdgesToNodesAggregator(tf.math.unsorted_segment_sum)(input_graph))
-    model_inputs.append(input_graph.nodes)
-    model_inputs.append(blocks.broadcast_globals_to_nodes(input_graph))
+    fixed_scale = scale
+    fixed_offset = offset
+    model_fn = lambda: lambda features: features * fixed_scale + fixed_offset
+    hardcoded_node_block = blocks.NodeBlock(node_model_fn=model_fn)
+    expected_graph_out = hardcoded_node_block(input_graph)
 
-    model_inputs = tf.concat(model_inputs, axis=-1)
-    self.assertIs(input_graph.edges, output_graph_out.edges)
-    self.assertIs(input_graph.globals, output_graph_out.globals)
-
-    expected_output_nodes = model_inputs * scale + offset
+    self.assertIs(expected_graph_out.edges, output_graph_out.edges)
+    self.assertIs(expected_graph_out.globals, output_graph_out.globals)
     self.assertNDArrayNear(
-        expected_output_nodes.numpy(), output_graph_out.nodes.numpy(), err=1e-4)
+        expected_graph_out.nodes.numpy(), output_graph_out.nodes.numpy(), err=1e-4)
 
   @parameterized.named_parameters(
       ("all inputs", True, True, True, True, 14),
@@ -935,22 +931,19 @@ class GlobalBlockTest(GraphModuleTest):
     """Compares the output of a GlobalBlock to an explicit computation based on optional arguments."""
     input_graph = self._get_input_graph()
     global_block = blocks.GlobalBlock(global_model_fn=self._global_model_args_fn)
-    output_graph_out = global_block(input_graph, scale=scale, offset=offset)
+    output_graph_out = global_block(
+        input_graph, global_model_kwargs=dict(scale=scale, offset=offset))
 
-    model_inputs = []
-    model_inputs.append(
-        blocks.EdgesToGlobalsAggregator(tf.math.unsorted_segment_sum)(input_graph))
-    model_inputs.append(
-        blocks.NodesToGlobalsAggregator(tf.math.unsorted_segment_sum)(input_graph))
-    model_inputs.append(input_graph.globals)
+    fixed_scale = scale
+    fixed_offset = offset
+    model_fn = lambda: lambda features: features * fixed_scale + fixed_offset
+    hardcoded_global_block = blocks.GlobalBlock(global_model_fn=model_fn)
+    expected_graph_out = hardcoded_global_block(input_graph)
 
-    model_inputs = tf.concat(model_inputs, axis=-1)
-    self.assertIs(input_graph.edges, output_graph_out.edges)
-    self.assertIs(input_graph.nodes, output_graph_out.nodes)
-
-    expected_output_globals = model_inputs * scale + offset
+    self.assertIs(expected_graph_out.edges, output_graph_out.edges)
+    self.assertIs(expected_graph_out.nodes, output_graph_out.nodes)
     self.assertNDArrayNear(
-        expected_output_globals.numpy(), output_graph_out.globals.numpy(), err=1e-4)
+        expected_graph_out.globals.numpy(), output_graph_out.globals.numpy(), err=1e-4)
 
   @parameterized.named_parameters(
       ("default", True, True, True, 10),
