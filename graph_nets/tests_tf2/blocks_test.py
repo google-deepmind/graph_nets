@@ -365,7 +365,8 @@ class EdgeBlockTest(GraphModuleTest):
     super(EdgeBlockTest, self).setUp()
     self._scale = 10.
     self._edge_model_fn = lambda: lambda features: features * self._scale
-    self._edge_model_args_fn = lambda: lambda features, scale, offset: features * scale + offset
+    model_args = lambda features, scale, offset: features * scale + offset
+    self._edge_model_args_fn = lambda: model_args
 
   @parameterized.named_parameters(
       ("all inputs", True, True, True, True),
@@ -413,7 +414,7 @@ class EdgeBlockTest(GraphModuleTest):
       ("without scaling and offsetting", 1, 0),
   )
   def test_optional_arguments(self, scale, offset):
-    """Compares the output of an EdgeBlock to an explicit computation based on optional arguments."""
+    """Assesses the correctness of the EdgeBlock using arguments."""
     input_graph = self._get_input_graph()
     edge_block = blocks.EdgeBlock(edge_model_fn=self._edge_model_args_fn)
     output_graph_out = edge_block(
@@ -428,7 +429,9 @@ class EdgeBlockTest(GraphModuleTest):
     self.assertIs(expected_graph_out.nodes, output_graph_out.nodes)
     self.assertIs(expected_graph_out.globals, output_graph_out.globals)
     self.assertNDArrayNear(
-        expected_graph_out.edges.numpy(), output_graph_out.edges.numpy(), err=1e-4)
+        expected_graph_out.edges.numpy(),
+        output_graph_out.edges.numpy(),
+        err=1e-4)
 
   @parameterized.named_parameters(
       ("all inputs", True, True, True, True, 12),
@@ -595,7 +598,8 @@ class NodeBlockTest(GraphModuleTest):
     super(NodeBlockTest, self).setUp()
     self._scale = 10.
     self._node_model_fn = lambda: lambda features: features * self._scale
-    self._node_model_args_fn = lambda: lambda features, scale, offset: features * scale + offset
+    model_args = lambda features, scale, offset: features * scale + offset
+    self._node_model_args_fn = lambda: model_args
 
   @parameterized.named_parameters(
       ("all inputs, custom reductions", True, True, True, True,
@@ -660,7 +664,7 @@ class NodeBlockTest(GraphModuleTest):
       ("without scaling and offsetting", 1, 0),
   )
   def test_optional_arguments(self, scale, offset):
-    """Compares the output of a NodeBlock to an explicit computation based on optional arguments."""
+    """Assesses the correctness of the NodeBlock using arguments."""
     input_graph = self._get_input_graph()
     node_block = blocks.NodeBlock(node_model_fn=self._node_model_args_fn)
     output_graph_out = node_block(
@@ -675,7 +679,9 @@ class NodeBlockTest(GraphModuleTest):
     self.assertIs(expected_graph_out.edges, output_graph_out.edges)
     self.assertIs(expected_graph_out.globals, output_graph_out.globals)
     self.assertNDArrayNear(
-        expected_graph_out.nodes.numpy(), output_graph_out.nodes.numpy(), err=1e-4)
+        expected_graph_out.nodes.numpy(),
+        output_graph_out.nodes.numpy(),
+        err=1e-4)
 
   @parameterized.named_parameters(
       ("all inputs", True, True, True, True, 14),
@@ -869,7 +875,8 @@ class GlobalBlockTest(GraphModuleTest):
     super(GlobalBlockTest, self).setUp()
     self._scale = 10.
     self._global_model_fn = lambda: lambda features: features * self._scale
-    self._global_model_args_fn = lambda: lambda features, scale, offset: features * scale + offset
+    model_args = lambda features, scale, offset: features * scale + offset
+    self._global_model_args_fn = lambda: model_args
 
   @parameterized.named_parameters(
       ("all_inputs, custom reductions",
@@ -928,9 +935,10 @@ class GlobalBlockTest(GraphModuleTest):
       ("without scaling and offsetting", 1, 0),
   )
   def test_optional_arguments(self, scale, offset):
-    """Compares the output of a GlobalBlock to an explicit computation based on optional arguments."""
+    """Assesses the correctness of the GlobalBlock using arguments."""
     input_graph = self._get_input_graph()
-    global_block = blocks.GlobalBlock(global_model_fn=self._global_model_args_fn)
+    global_block = blocks.GlobalBlock(
+        global_model_fn=self._global_model_args_fn)
     output_graph_out = global_block(
         input_graph, global_model_kwargs=dict(scale=scale, offset=offset))
 
@@ -943,7 +951,9 @@ class GlobalBlockTest(GraphModuleTest):
     self.assertIs(expected_graph_out.edges, output_graph_out.edges)
     self.assertIs(expected_graph_out.nodes, output_graph_out.nodes)
     self.assertNDArrayNear(
-        expected_graph_out.globals.numpy(), output_graph_out.globals.numpy(), err=1e-4)
+        expected_graph_out.globals.numpy(),
+        output_graph_out.globals.numpy(),
+        err=1e-4)
 
   @parameterized.named_parameters(
       ("default", True, True, True, 10),

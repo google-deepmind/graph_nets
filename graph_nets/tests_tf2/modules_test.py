@@ -123,11 +123,6 @@ class GraphIndependentTest(GraphModuleTest):
       kwargs["name"] = name
     return modules.GraphIndependent(**kwargs)
 
-  def _get_norm_model(self):
-    kwargs = {
-    }
-    return modules.GraphIndependent(**kwargs)
-
   def test_same_as_subblocks(self):
     """Compares the output to explicit subblocks output."""
     input_graph = self._get_input_graph()
@@ -149,31 +144,44 @@ class GraphIndependentTest(GraphModuleTest):
       ("with scale and offset", {"scale": 2, "offset": 1},
        {"scale": .5, "offset": .25}, {"scale": 3, "offset": 1.5})
   )
-  def test_kwargs(self, edge_model_kwargs, node_model_kwargs, global_model_kwargs):
+  def test_kwargs(self,
+                  edge_model_kwargs,
+                  node_model_kwargs,
+                  global_model_kwargs):
     """Compares the output to expected output graph using kwargs."""
     input_graph = self._get_input_graph()
 
     edge_model_fn = functools.partial(
         snt.LayerNorm, axis=1, create_scale=False, create_offset=False)
     edge_model_fn_with_params = lambda: functools.partial(
-        edge_model_fn(), scale=edge_model_kwargs["scale"], offset=edge_model_kwargs["offset"])
+        edge_model_fn(),
+        scale=edge_model_kwargs["scale"],
+        offset=edge_model_kwargs["offset"])
 
     node_model_fn = functools.partial(
         snt.LayerNorm, axis=1, create_scale=False, create_offset=False)
     node_model_fn_with_params = lambda: functools.partial(
-        node_model_fn(), scale=node_model_kwargs["scale"], offset=node_model_kwargs["offset"])
+        node_model_fn(),
+        scale=node_model_kwargs["scale"],
+        offset=node_model_kwargs["offset"])
 
     global_model_fn = functools.partial(
         snt.LayerNorm, axis=1, create_scale=False, create_offset=False)
     global_model_fn_with_params = lambda: functools.partial(
-        global_model_fn(), scale=global_model_kwargs["scale"], offset=global_model_kwargs["offset"])
+        global_model_fn(),
+        scale=global_model_kwargs["scale"],
+        offset=global_model_kwargs["offset"])
 
-    model = modules.GraphIndependent(edge_model_fn, node_model_fn, global_model_fn)
+    model = modules.GraphIndependent(
+        edge_model_fn, node_model_fn, global_model_fn)
     model_with_params = modules.GraphIndependent(
-      edge_model_fn_with_params, node_model_fn_with_params, global_model_fn_with_params)
+        edge_model_fn_with_params,
+        node_model_fn_with_params,
+        global_model_fn_with_params)
 
-    output_graph = utils_tf.nest_to_numpy(
-        model(input_graph, edge_model_kwargs, node_model_kwargs, global_model_kwargs))
+    output_model = model(
+        input_graph, edge_model_kwargs, node_model_kwargs, global_model_kwargs)
+    output_graph = utils_tf.nest_to_numpy(output_model)
     expected_graph = utils_tf.nest_to_numpy(model_with_params(input_graph))
 
     self.assertAllEqual(expected_graph.receivers, output_graph.receivers,)
@@ -181,7 +189,8 @@ class GraphIndependentTest(GraphModuleTest):
 
     self._assert_all_none_or_all_close(expected_graph.edges, output_graph.edges)
     self._assert_all_none_or_all_close(expected_graph.nodes, output_graph.nodes)
-    self._assert_all_none_or_all_close(expected_graph.globals, output_graph.globals)
+    self._assert_all_none_or_all_close(
+        expected_graph.globals, output_graph.globals)
 
   @parameterized.named_parameters(
       ("default name", None), ("custom name", "custom_name"))
@@ -356,31 +365,43 @@ class GraphNetworkTest(GraphModuleTest):
       ("with scale and offset", {"scale": 2, "offset": 1},
        {"scale": .5, "offset": .25}, {"scale": 3, "offset": 1.5})
   )
-  def test_kwargs(self, edge_model_kwargs, node_model_kwargs, global_model_kwargs):
+  def test_kwargs(self,
+                  edge_model_kwargs,
+                  node_model_kwargs,
+                  global_model_kwargs):
     """Compares the output to expected output graph using kwargs."""
     input_graph = self._get_input_graph()
 
     edge_model_fn = functools.partial(
         snt.LayerNorm, axis=1, create_scale=False, create_offset=False)
     edge_model_fn_with_params = lambda: functools.partial(
-        edge_model_fn(), scale=edge_model_kwargs["scale"], offset=edge_model_kwargs["offset"])
+        edge_model_fn(),
+        scale=edge_model_kwargs["scale"],
+        offset=edge_model_kwargs["offset"])
 
     node_model_fn = functools.partial(
         snt.LayerNorm, axis=1, create_scale=False, create_offset=False)
     node_model_fn_with_params = lambda: functools.partial(
-        node_model_fn(), scale=node_model_kwargs["scale"], offset=node_model_kwargs["offset"])
+        node_model_fn(),
+        scale=node_model_kwargs["scale"],
+        offset=node_model_kwargs["offset"])
 
     global_model_fn = functools.partial(
         snt.LayerNorm, axis=1, create_scale=False, create_offset=False)
     global_model_fn_with_params = lambda: functools.partial(
-        global_model_fn(), scale=global_model_kwargs["scale"], offset=global_model_kwargs["offset"])
+        global_model_fn(),
+        scale=global_model_kwargs["scale"],
+        offset=global_model_kwargs["offset"])
 
     model = modules.GraphNetwork(edge_model_fn, node_model_fn, global_model_fn)
     model_with_params = modules.GraphNetwork(
-      edge_model_fn_with_params, node_model_fn_with_params, global_model_fn_with_params)
+        edge_model_fn_with_params,
+        node_model_fn_with_params,
+        global_model_fn_with_params)
 
-    output_graph = utils_tf.nest_to_numpy(
-        model(input_graph, edge_model_kwargs, node_model_kwargs, global_model_kwargs))
+    output_model = model(
+        input_graph, edge_model_kwargs, node_model_kwargs, global_model_kwargs)
+    output_graph = utils_tf.nest_to_numpy(output_model)
     expected_graph = utils_tf.nest_to_numpy(model_with_params(input_graph))
 
     self.assertAllEqual(expected_graph.receivers, output_graph.receivers,)
@@ -388,7 +409,8 @@ class GraphNetworkTest(GraphModuleTest):
 
     self._assert_all_none_or_all_close(expected_graph.edges, output_graph.edges)
     self._assert_all_none_or_all_close(expected_graph.nodes, output_graph.nodes)
-    self._assert_all_none_or_all_close(expected_graph.globals, output_graph.globals)
+    self._assert_all_none_or_all_close(
+        expected_graph.globals, output_graph.globals)
 
   def test_dynamic_batch_sizes(self):
     """Checks that all batch sizes are as expected through a GraphNetwork."""
@@ -751,7 +773,8 @@ class InteractionNetworkTest(GraphModuleTest):
     self._assert_all_none_or_all_close(expected_nodes, nodes_out)
 
   @parameterized.named_parameters(
-      ("with scale and offset", {"scale": 2, "offset": 1}, {"scale": .5, "offset": .25})
+      ("with scale and offset",
+       {"scale": 2, "offset": 1}, {"scale": .5, "offset": .25})
   )
   def test_kwargs(self, edge_model_kwargs, node_model_kwargs):
     """Compares the output to expected output graph using kwargs."""
@@ -760,12 +783,16 @@ class InteractionNetworkTest(GraphModuleTest):
     edge_model_fn = functools.partial(
         snt.LayerNorm, axis=1, create_scale=False, create_offset=False)
     edge_model_fn_with_params = lambda: functools.partial(
-        edge_model_fn(), scale=edge_model_kwargs["scale"], offset=edge_model_kwargs["offset"])
+        edge_model_fn(),
+        scale=edge_model_kwargs["scale"],
+        offset=edge_model_kwargs["offset"])
 
     node_model_fn = functools.partial(
         snt.LayerNorm, axis=1, create_scale=False, create_offset=False)
     node_model_fn_with_params = lambda: functools.partial(
-        node_model_fn(), scale=node_model_kwargs["scale"], offset=node_model_kwargs["offset"])
+        node_model_fn(),
+        scale=node_model_kwargs["scale"],
+        offset=node_model_kwargs["offset"])
 
     model = modules.InteractionNetwork(edge_model_fn, node_model_fn)
     model_with_params = modules.InteractionNetwork(
@@ -901,7 +928,8 @@ class RelationNetworkTest(GraphModuleTest):
         expected_output_global_block.globals.numpy())
 
   @parameterized.named_parameters(
-      ("with scale and offset", {"scale": 2, "offset": 1}, {"scale": .5, "offset": .25})
+      ("with scale and offset",
+       {"scale": 2, "offset": 1}, {"scale": .5, "offset": .25})
   )
   def test_kwargs(self, edge_model_kwargs, global_model_kwargs):
     """Compares the output to expected output graph using kwargs."""
@@ -910,12 +938,16 @@ class RelationNetworkTest(GraphModuleTest):
     edge_model_fn = functools.partial(
         snt.LayerNorm, axis=1, create_scale=False, create_offset=False)
     edge_model_fn_with_params = lambda: functools.partial(
-        edge_model_fn(), scale=edge_model_kwargs["scale"], offset=edge_model_kwargs["offset"])
+        edge_model_fn(),
+        scale=edge_model_kwargs["scale"],
+        offset=edge_model_kwargs["offset"])
 
     global_model_fn = functools.partial(
         snt.LayerNorm, axis=1, create_scale=False, create_offset=False)
     global_model_fn_with_params = lambda: functools.partial(
-        global_model_fn(), scale=global_model_kwargs["scale"], offset=global_model_kwargs["offset"])
+        global_model_fn(),
+        scale=global_model_kwargs["scale"],
+        offset=global_model_kwargs["offset"])
 
     model = modules.RelationNetwork(edge_model_fn, global_model_fn)
     model_with_params = modules.RelationNetwork(
@@ -930,7 +962,8 @@ class RelationNetworkTest(GraphModuleTest):
     self.assertAllEqual(expected_graph.senders, expected_graph.senders)
     self.assertAllEqual(expected_graph.edges, output_graph.edges)
 
-    self._assert_all_none_or_all_close(expected_graph.globals, output_graph.globals)
+    self._assert_all_none_or_all_close(
+        expected_graph.globals, output_graph.globals)
 
   @parameterized.named_parameters(
       ("no nodes", ["nodes"],), ("no edges", ["edges", "receivers", "senders"],)
@@ -1038,7 +1071,8 @@ class DeepSetsTest(GraphModuleTest):
     self._assert_all_none_or_all_close(expected_globals, output_globals)
 
   @parameterized.named_parameters(
-      ("with scale and offset", {"scale": .5, "offset": .25}, {"scale": 3, "offset": 1.5})
+      ("with scale and offset",
+       {"scale": .5, "offset": .25}, {"scale": 3, "offset": 1.5})
   )
   def test_kwargs(self, node_model_kwargs, global_model_kwargs):
     """Compares the output to expected output graph using kwargs."""
@@ -1047,12 +1081,16 @@ class DeepSetsTest(GraphModuleTest):
     node_model_fn = functools.partial(
         snt.LayerNorm, axis=1, create_scale=False, create_offset=False)
     node_model_fn_with_params = lambda: functools.partial(
-        node_model_fn(), scale=node_model_kwargs["scale"], offset=node_model_kwargs["offset"])
+        node_model_fn(),
+        scale=node_model_kwargs["scale"],
+        offset=node_model_kwargs["offset"])
 
     global_model_fn = functools.partial(
         snt.LayerNorm, axis=1, create_scale=False, create_offset=False)
     global_model_fn_with_params = lambda: functools.partial(
-        global_model_fn(), scale=global_model_kwargs["scale"], offset=global_model_kwargs["offset"])
+        global_model_fn(),
+        scale=global_model_kwargs["scale"],
+        offset=global_model_kwargs["offset"])
 
     model = modules.DeepSets(node_model_fn, global_model_fn)
     model_with_params = modules.DeepSets(
@@ -1066,8 +1104,10 @@ class DeepSetsTest(GraphModuleTest):
     self.assertAllEqual(expected_graph.senders, expected_graph.senders)
     self.assertAllEqual(expected_graph.edges, output_graph.edges)
 
-    self._assert_all_none_or_all_close(expected_graph.nodes, output_graph.nodes)
-    self._assert_all_none_or_all_close(expected_graph.globals, output_graph.globals)
+    self._assert_all_none_or_all_close(
+        expected_graph.nodes, output_graph.nodes)
+    self._assert_all_none_or_all_close(
+        expected_graph.globals, output_graph.globals)
 
   @parameterized.parameters(
       ("nodes",), ("globals",),
@@ -1207,31 +1247,46 @@ class CommNetTest(GraphModuleTest):
       ("with scale and offset", {"scale": 2, "offset": 1},
        {"scale": .5, "offset": .25}, {"scale": 3, "offset": 1.5})
   )
-  def test_kwargs(self, edge_model_kwargs, node_encoder_model_kwargs, node_model_kwargs):
+  def test_kwargs(self,
+                  edge_model_kwargs,
+                  node_encoder_model_kwargs,
+                  node_model_kwargs):
     """Compares the output to expected output graph using kwargs."""
     input_graph = self._get_input_graph()
 
     edge_model_fn = functools.partial(
         snt.LayerNorm, axis=1, create_scale=False, create_offset=False)
     edge_model_fn_with_params = lambda: functools.partial(
-        edge_model_fn(), scale=edge_model_kwargs["scale"], offset=edge_model_kwargs["offset"])
+        edge_model_fn(),
+        scale=edge_model_kwargs["scale"],
+        offset=edge_model_kwargs["offset"])
 
     node_encoder_model_fn = functools.partial(
         snt.LayerNorm, axis=1, create_scale=False, create_offset=False)
     node_encoder_model_fn_with_params = lambda: functools.partial(
-        node_encoder_model_fn(), scale=node_encoder_model_kwargs["scale"], offset=node_encoder_model_kwargs["offset"])
+        node_encoder_model_fn(),
+        scale=node_encoder_model_kwargs["scale"],
+        offset=node_encoder_model_kwargs["offset"])
 
     node_model_fn = functools.partial(
         snt.LayerNorm, axis=1, create_scale=False, create_offset=False)
     node_model_fn_with_params = lambda: functools.partial(
-        node_model_fn(), scale=node_model_kwargs["scale"], offset=node_model_kwargs["offset"])
+        node_model_fn(),
+        scale=node_model_kwargs["scale"],
+        offset=node_model_kwargs["offset"])
 
     model = modules.CommNet(edge_model_fn, node_encoder_model_fn, node_model_fn)
     model_with_params = modules.CommNet(
-      edge_model_fn_with_params, node_encoder_model_fn_with_params, node_model_fn_with_params)
+        edge_model_fn_with_params,
+        node_encoder_model_fn_with_params,
+        node_model_fn_with_params)
 
-    output_graph = utils_tf.nest_to_numpy(
-        model(input_graph, edge_model_kwargs, node_encoder_model_kwargs, node_model_kwargs))
+    output_model =  model(
+        input_graph,
+        edge_model_kwargs,
+        node_encoder_model_kwargs,
+        node_model_kwargs)
+    output_graph = utils_tf.nest_to_numpy(output_model)
     expected_graph = utils_tf.nest_to_numpy(model_with_params(input_graph))
 
     self.assertAllEqual(expected_graph.globals, output_graph.globals)

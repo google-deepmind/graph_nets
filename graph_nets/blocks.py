@@ -456,7 +456,7 @@ class EdgeBlock(_base.AbstractModule):
         if `graph` has `None` fields incompatible with the selected `use_edges`,
         `use_receiver_nodes`, `use_sender_nodes`, or `use_globals` options.
     """
-    if edge_model_kwargs == None:
+    if edge_model_kwargs is None:
       edge_model_kwargs = {}
 
     _validate_graph(
@@ -574,7 +574,7 @@ class NodeBlock(_base.AbstractModule):
     Returns:
       An output `graphs.GraphsTuple` with updated nodes.
     """
-    if node_model_kwargs == None:
+    if node_model_kwargs is None:
       node_model_kwargs = {}
 
     nodes_to_collect = []
@@ -678,12 +678,13 @@ class GlobalBlock(_base.AbstractModule):
         (if `use_edges` is `True`), individual nodes (if `use_nodes` is True)
         and per graph globals (if `use_globals` is `True`) should be
         concatenable on the last axis.
-      global_model_kwargs: Optional keyword arguments to pass to the `global_model`.
+      global_model_kwargs: Optional keyword argumentsto pass to
+        the `global_model`.
 
     Returns:
       An output `graphs.GraphsTuple` with updated globals.
     """
-    if global_model_kwargs == None:
+    if global_model_kwargs is None:
       global_model_kwargs = {}
 
     globals_to_collect = []
@@ -701,5 +702,6 @@ class GlobalBlock(_base.AbstractModule):
       globals_to_collect.append(graph.globals)
 
     collected_globals = tf.concat(globals_to_collect, axis=-1)
-    updated_globals = self._global_model(collected_globals, **global_model_kwargs)
+    updated_globals = self._global_model(
+        collected_globals, **global_model_kwargs)
     return graph.replace(globals=updated_globals)
