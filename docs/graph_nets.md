@@ -17,7 +17,7 @@ and the global features of the corresponding graph.
 
 See https://arxiv.org/abs/1806.01261 for more details.
 
-#### [`blocks.EdgeBlock.__init__(edge_model_fn, use_edges=True, use_receiver_nodes=True, use_sender_nodes=True, use_globals=True, name='edge_block')`](https://github.com/deepmind/graph_nets/blob/master/graph_nets/blocks.py?l=379)<!-- blocks.EdgeBlock.__init__ .code-reference -->
+#### [`blocks.EdgeBlock.__init__(edge_model_fn, use_edges=True, use_receiver_nodes=True, use_sender_nodes=True, use_globals=True, name='edge_block')`](https://github.com/deepmind/graph_nets/blob/master/graph_nets/blocks.py?l=397)<!-- blocks.EdgeBlock.__init__ .code-reference -->
 
 Initializes the EdgeBlock module.
 
@@ -47,7 +47,7 @@ Initializes the EdgeBlock module.
 * `ValueError`: When fields that are required are missing.
 
 
-#### [`blocks.EdgeBlock.__call__(graph)`](https://github.com/deepmind/graph_nets/blob/master/graph_nets/blocks.py?l=423)<!-- blocks.EdgeBlock.__call__ .code-reference -->
+#### [`blocks.EdgeBlock.__call__(graph, edge_model_kwargs=None)`](https://github.com/deepmind/graph_nets/blob/master/graph_nets/blocks.py?l=441)<!-- blocks.EdgeBlock.__call__ .code-reference -->
 
 Connects the edge block.
 
@@ -59,6 +59,7 @@ Connects the edge block.
     `use_receiver_nodes` or `use_sender_nodes` is `True`) and per graph
     globals (if `use_globals` is `True`) should be concatenable on the last
     axis.
+* `edge_model_kwargs`: Optional keyword arguments to pass to the `edge_model`.
 
 ##### Returns:
 
@@ -79,7 +80,7 @@ Returns the subgraphs created by this module so far.
 
 #### [`blocks.EdgeBlock.defun()`](https://github.com/deepmind/sonnet/blob/master/sonnet/python/modules/base.py)<!-- blocks.EdgeBlock.defun .code-reference -->
 
-Wraps this modules call method in a callable graph function.
+Wraps this module's call method in a callable graph function.
 
 
 #### [`blocks.EdgeBlock.defun_wrapped`](https://github.com/deepmind/sonnet/blob/master/sonnet/python/modules/base.py)<!-- blocks.EdgeBlock.defun_wrapped .code-reference -->
@@ -281,7 +282,7 @@ information about what variables are captured.
 
 Aggregates all edges into globals.
 
-#### [`blocks.EdgesToGlobalsAggregator.__init__(reducer, name='edges_to_globals_aggregator')`](https://github.com/deepmind/graph_nets/blob/master/graph_nets/blocks.py?l=164)<!-- blocks.EdgesToGlobalsAggregator.__init__ .code-reference -->
+#### [`blocks.EdgesToGlobalsAggregator.__init__(reducer, name='edges_to_globals_aggregator')`](https://github.com/deepmind/graph_nets/blob/master/graph_nets/blocks.py?l=180)<!-- blocks.EdgesToGlobalsAggregator.__init__ .code-reference -->
 
 Initializes the EdgesToGlobalsAggregator module.
 
@@ -306,7 +307,7 @@ Examples of compatible reducers are:
 * `name`: The module name.
 
 
-#### [`blocks.EdgesToGlobalsAggregator.__call__(graph)`](https://github.com/deepmind/graph_nets/blob/master/graph_nets/blocks.py?l=188)<!-- blocks.EdgesToGlobalsAggregator.__call__ .code-reference -->
+#### [`blocks.EdgesToGlobalsAggregator.__call__(graph)`](https://github.com/deepmind/graph_nets/blob/master/graph_nets/blocks.py?l=204)<!-- blocks.EdgesToGlobalsAggregator.__call__ .code-reference -->
 
 Add elements to the Graph, computing output Tensors from input Tensors.
 
@@ -330,7 +331,7 @@ Returns the subgraphs created by this module so far.
 
 #### [`blocks.EdgesToGlobalsAggregator.defun()`](https://github.com/deepmind/sonnet/blob/master/sonnet/python/modules/base.py)<!-- blocks.EdgesToGlobalsAggregator.defun .code-reference -->
 
-Wraps this modules call method in a callable graph function.
+Wraps this module's call method in a callable graph function.
 
 
 #### [`blocks.EdgesToGlobalsAggregator.defun_wrapped`](https://github.com/deepmind/sonnet/blob/master/sonnet/python/modules/base.py)<!-- blocks.EdgesToGlobalsAggregator.defun_wrapped .code-reference -->
@@ -538,7 +539,7 @@ edges of the graph, and the aggregated features of the nodes of the graph.
 
 See https://arxiv.org/abs/1806.01261 for more details.
 
-#### [`blocks.GlobalBlock.__init__(global_model_fn, use_edges=True, use_nodes=True, use_globals=True, nodes_reducer=<function unsorted_segment_sum>, edges_reducer=<function unsorted_segment_sum>, name='global_block')`](https://github.com/deepmind/graph_nets/blob/master/graph_nets/blocks.py?l=584)<!-- blocks.GlobalBlock.__init__ .code-reference -->
+#### [`blocks.GlobalBlock.__init__(global_model_fn, use_edges=True, use_nodes=True, use_globals=True, nodes_reducer=<function unsorted_segment_sum>, edges_reducer=<function unsorted_segment_sum>, name='global_block')`](https://github.com/deepmind/graph_nets/blob/master/graph_nets/blocks.py?l=616)<!-- blocks.GlobalBlock.__init__ .code-reference -->
 
 Initializes the GlobalBlock module.
 
@@ -569,7 +570,7 @@ Initializes the GlobalBlock module.
 * `ValueError`: When fields that are required are missing.
 
 
-#### [`blocks.GlobalBlock.__call__(graph)`](https://github.com/deepmind/graph_nets/blob/master/graph_nets/blocks.py?l=642)<!-- blocks.GlobalBlock.__call__ .code-reference -->
+#### [`blocks.GlobalBlock.__call__(graph, global_model_kwargs=None)`](https://github.com/deepmind/graph_nets/blob/master/graph_nets/blocks.py?l=674)<!-- blocks.GlobalBlock.__call__ .code-reference -->
 
 Connects the global block.
 
@@ -580,6 +581,8 @@ Connects the global block.
     (if `use_edges` is `True`), individual nodes (if `use_nodes` is True)
     and per graph globals (if `use_globals` is `True`) should be
     concatenable on the last axis.
+* `global_model_kwargs`: Optional keyword argumentsto pass to
+    the `global_model`.
 
 ##### Returns:
 
@@ -593,7 +596,7 @@ Returns the subgraphs created by this module so far.
 
 #### [`blocks.GlobalBlock.defun()`](https://github.com/deepmind/sonnet/blob/master/sonnet/python/modules/base.py)<!-- blocks.GlobalBlock.defun .code-reference -->
 
-Wraps this modules call method in a callable graph function.
+Wraps this module's call method in a callable graph function.
 
 
 #### [`blocks.GlobalBlock.defun_wrapped`](https://github.com/deepmind/sonnet/blob/master/sonnet/python/modules/base.py)<!-- blocks.GlobalBlock.defun_wrapped .code-reference -->
@@ -801,7 +804,7 @@ adjacent edges, and the global features of the corresponding graph.
 
 See https://arxiv.org/abs/1806.01261 for more details.
 
-#### [`blocks.NodeBlock.__init__(node_model_fn, use_received_edges=True, use_sent_edges=False, use_nodes=True, use_globals=True, received_edges_reducer=<function unsorted_segment_sum>, sent_edges_reducer=<function unsorted_segment_sum>, name='node_block')`](https://github.com/deepmind/graph_nets/blob/master/graph_nets/blocks.py?l=474)<!-- blocks.NodeBlock.__init__ .code-reference -->
+#### [`blocks.NodeBlock.__init__(node_model_fn, use_received_edges=True, use_sent_edges=False, use_nodes=True, use_globals=True, received_edges_reducer=<function unsorted_segment_sum>, sent_edges_reducer=<function unsorted_segment_sum>, name='node_block')`](https://github.com/deepmind/graph_nets/blob/master/graph_nets/blocks.py?l=498)<!-- blocks.NodeBlock.__init__ .code-reference -->
 
 Initializes the NodeBlock module.
 
@@ -837,7 +840,7 @@ Initializes the NodeBlock module.
 * `ValueError`: When fields that are required are missing.
 
 
-#### [`blocks.NodeBlock.__call__(graph)`](https://github.com/deepmind/graph_nets/blob/master/graph_nets/blocks.py?l=541)<!-- blocks.NodeBlock.__call__ .code-reference -->
+#### [`blocks.NodeBlock.__call__(graph, node_model_kwargs=None)`](https://github.com/deepmind/graph_nets/blob/master/graph_nets/blocks.py?l=565)<!-- blocks.NodeBlock.__call__ .code-reference -->
 
 Connects the node block.
 
@@ -848,6 +851,7 @@ Connects the node block.
     features (if `use_received_edges` or `use_sent_edges` is `True`),
     individual nodes features (if `use_nodes` is True) and per graph globals
     (if `use_globals` is `True`) should be concatenable on the last axis.
+* `node_model_kwargs`: Optional keyword arguments to pass to the `node_model`.
 
 ##### Returns:
 
@@ -861,7 +865,7 @@ Returns the subgraphs created by this module so far.
 
 #### [`blocks.NodeBlock.defun()`](https://github.com/deepmind/sonnet/blob/master/sonnet/python/modules/base.py)<!-- blocks.NodeBlock.defun .code-reference -->
 
-Wraps this modules call method in a callable graph function.
+Wraps this module's call method in a callable graph function.
 
 
 #### [`blocks.NodeBlock.defun_wrapped`](https://github.com/deepmind/sonnet/blob/master/sonnet/python/modules/base.py)<!-- blocks.NodeBlock.defun_wrapped .code-reference -->
@@ -1063,7 +1067,7 @@ information about what variables are captured.
 
 Aggregates all nodes into globals.
 
-#### [`blocks.NodesToGlobalsAggregator.__init__(reducer, name='nodes_to_globals_aggregator')`](https://github.com/deepmind/graph_nets/blob/master/graph_nets/blocks.py?l=200)<!-- blocks.NodesToGlobalsAggregator.__init__ .code-reference -->
+#### [`blocks.NodesToGlobalsAggregator.__init__(reducer, name='nodes_to_globals_aggregator')`](https://github.com/deepmind/graph_nets/blob/master/graph_nets/blocks.py?l=217)<!-- blocks.NodesToGlobalsAggregator.__init__ .code-reference -->
 
 Initializes the NodesToGlobalsAggregator module.
 
@@ -1088,7 +1092,7 @@ Examples of compatible reducers are:
 * `name`: The module name.
 
 
-#### [`blocks.NodesToGlobalsAggregator.__call__(graph)`](https://github.com/deepmind/graph_nets/blob/master/graph_nets/blocks.py?l=224)<!-- blocks.NodesToGlobalsAggregator.__call__ .code-reference -->
+#### [`blocks.NodesToGlobalsAggregator.__call__(graph)`](https://github.com/deepmind/graph_nets/blob/master/graph_nets/blocks.py?l=241)<!-- blocks.NodesToGlobalsAggregator.__call__ .code-reference -->
 
 Add elements to the Graph, computing output Tensors from input Tensors.
 
@@ -1112,7 +1116,7 @@ Returns the subgraphs created by this module so far.
 
 #### [`blocks.NodesToGlobalsAggregator.defun()`](https://github.com/deepmind/sonnet/blob/master/sonnet/python/modules/base.py)<!-- blocks.NodesToGlobalsAggregator.defun .code-reference -->
 
-Wraps this modules call method in a callable graph function.
+Wraps this module's call method in a callable graph function.
 
 
 #### [`blocks.NodesToGlobalsAggregator.defun_wrapped`](https://github.com/deepmind/sonnet/blob/master/sonnet/python/modules/base.py)<!-- blocks.NodesToGlobalsAggregator.defun_wrapped .code-reference -->
@@ -1314,7 +1318,7 @@ information about what variables are captured.
 
 Agregates received edges into the corresponding receiver nodes.
 
-#### [`blocks.ReceivedEdgesToNodesAggregator.__init__(reducer, name='received_edges_to_nodes_aggregator')`](https://github.com/deepmind/graph_nets/blob/master/graph_nets/blocks.py?l=288)<!-- blocks.ReceivedEdgesToNodesAggregator.__init__ .code-reference -->
+#### [`blocks.ReceivedEdgesToNodesAggregator.__init__(reducer, name='received_edges_to_nodes_aggregator')`](https://github.com/deepmind/graph_nets/blob/master/graph_nets/blocks.py?l=306)<!-- blocks.ReceivedEdgesToNodesAggregator.__init__ .code-reference -->
 
 Constructor.
 
@@ -1339,7 +1343,7 @@ Examples of compatible reducers are:
 * `name`: The module name.
 
 
-#### [`blocks.ReceivedEdgesToNodesAggregator.__call__(graph)`](https://github.com/deepmind/graph_nets/blob/master/graph_nets/blocks.py?l=242)<!-- blocks.ReceivedEdgesToNodesAggregator.__call__ .code-reference -->
+#### [`blocks.ReceivedEdgesToNodesAggregator.__call__(graph)`](https://github.com/deepmind/graph_nets/blob/master/graph_nets/blocks.py?l=260)<!-- blocks.ReceivedEdgesToNodesAggregator.__call__ .code-reference -->
 
 Add elements to the Graph, computing output Tensors from input Tensors.
 
@@ -1363,7 +1367,7 @@ Returns the subgraphs created by this module so far.
 
 #### [`blocks.ReceivedEdgesToNodesAggregator.defun()`](https://github.com/deepmind/sonnet/blob/master/sonnet/python/modules/base.py)<!-- blocks.ReceivedEdgesToNodesAggregator.defun .code-reference -->
 
-Wraps this modules call method in a callable graph function.
+Wraps this module's call method in a callable graph function.
 
 
 #### [`blocks.ReceivedEdgesToNodesAggregator.defun_wrapped`](https://github.com/deepmind/sonnet/blob/master/sonnet/python/modules/base.py)<!-- blocks.ReceivedEdgesToNodesAggregator.defun_wrapped .code-reference -->
@@ -1565,7 +1569,7 @@ information about what variables are captured.
 
 Agregates sent edges into the corresponding sender nodes.
 
-#### [`blocks.SentEdgesToNodesAggregator.__init__(reducer, name='sent_edges_to_nodes_aggregator')`](https://github.com/deepmind/graph_nets/blob/master/graph_nets/blocks.py?l=258)<!-- blocks.SentEdgesToNodesAggregator.__init__ .code-reference -->
+#### [`blocks.SentEdgesToNodesAggregator.__init__(reducer, name='sent_edges_to_nodes_aggregator')`](https://github.com/deepmind/graph_nets/blob/master/graph_nets/blocks.py?l=276)<!-- blocks.SentEdgesToNodesAggregator.__init__ .code-reference -->
 
 Constructor.
 
@@ -1590,7 +1594,7 @@ Examples of compatible reducers are:
 * `name`: The module name.
 
 
-#### [`blocks.SentEdgesToNodesAggregator.__call__(graph)`](https://github.com/deepmind/graph_nets/blob/master/graph_nets/blocks.py?l=242)<!-- blocks.SentEdgesToNodesAggregator.__call__ .code-reference -->
+#### [`blocks.SentEdgesToNodesAggregator.__call__(graph)`](https://github.com/deepmind/graph_nets/blob/master/graph_nets/blocks.py?l=260)<!-- blocks.SentEdgesToNodesAggregator.__call__ .code-reference -->
 
 Add elements to the Graph, computing output Tensors from input Tensors.
 
@@ -1614,7 +1618,7 @@ Returns the subgraphs created by this module so far.
 
 #### [`blocks.SentEdgesToNodesAggregator.defun()`](https://github.com/deepmind/sonnet/blob/master/sonnet/python/modules/base.py)<!-- blocks.SentEdgesToNodesAggregator.defun .code-reference -->
 
-Wraps this modules call method in a callable graph function.
+Wraps this module's call method in a callable graph function.
 
 
 #### [`blocks.SentEdgesToNodesAggregator.defun_wrapped`](https://github.com/deepmind/sonnet/blob/master/sonnet/python/modules/base.py)<!-- blocks.SentEdgesToNodesAggregator.defun_wrapped .code-reference -->
@@ -1812,7 +1816,7 @@ information about what variables are captured.
 
 
 
-### [`blocks.broadcast_globals_to_edges(graph, name='broadcast_globals_to_edges')`](https://github.com/deepmind/graph_nets/blob/master/graph_nets/blocks.py?l=68)<!-- blocks.broadcast_globals_to_edges .code-reference -->
+### [`blocks.broadcast_globals_to_edges(graph, name='broadcast_globals_to_edges', num_edges_hint=None)`](https://github.com/deepmind/graph_nets/blob/master/graph_nets/blocks.py?l=78)<!-- blocks.broadcast_globals_to_edges .code-reference -->
 
 Broadcasts the global features to the edges of a graph.
 
@@ -1823,6 +1827,7 @@ Broadcasts the global features to the edges of a graph.
     shape `[n_graphs] + global_shape`, and `N_EDGE` field of shape
     `[n_graphs]`.
 * `name`: (string, optional) A name for the operation.
+* `num_edges_hint`: Integer indicating the total number of edges, if known.
 
 ##### Returns:
 
@@ -1838,7 +1843,7 @@ Broadcasts the global features to the edges of a graph.
 * `ValueError`: If either `graph.globals` or `graph.n_edge` is `None`.
 
 
-### [`blocks.broadcast_globals_to_nodes(graph, name='broadcast_globals_to_nodes')`](https://github.com/deepmind/graph_nets/blob/master/graph_nets/blocks.py?l=92)<!-- blocks.broadcast_globals_to_nodes .code-reference -->
+### [`blocks.broadcast_globals_to_nodes(graph, name='broadcast_globals_to_nodes', num_nodes_hint=None)`](https://github.com/deepmind/graph_nets/blob/master/graph_nets/blocks.py?l=105)<!-- blocks.broadcast_globals_to_nodes .code-reference -->
 
 Broadcasts the global features to the nodes of a graph.
 
@@ -1849,6 +1854,7 @@ Broadcasts the global features to the nodes of a graph.
     shape `[n_graphs] + global_shape`, and `N_NODE` field of shape
     `[n_graphs]`.
 * `name`: (string, optional) A name for the operation.
+* `num_nodes_hint`: Integer indicating the total number of nodes, if known.
 
 ##### Returns:
 
@@ -1864,7 +1870,7 @@ Broadcasts the global features to the nodes of a graph.
 * `ValueError`: If either `graph.globals` or `graph.n_node` is `None`.
 
 
-### [`blocks.broadcast_receiver_nodes_to_edges(graph, name='broadcast_receiver_nodes_to_edges')`](https://github.com/deepmind/graph_nets/blob/master/graph_nets/blocks.py?l=139)<!-- blocks.broadcast_receiver_nodes_to_edges .code-reference -->
+### [`blocks.broadcast_receiver_nodes_to_edges(graph, name='broadcast_receiver_nodes_to_edges')`](https://github.com/deepmind/graph_nets/blob/master/graph_nets/blocks.py?l=155)<!-- blocks.broadcast_receiver_nodes_to_edges .code-reference -->
 
 Broadcasts the node features to the edges they are receiving from.
 
@@ -1887,7 +1893,7 @@ Broadcasts the node features to the edges they are receiving from.
 * `ValueError`: If either `graph.nodes` or `graph.receivers` is `None`.
 
 
-### [`blocks.broadcast_sender_nodes_to_edges(graph, name='broadcast_sender_nodes_to_edges')`](https://github.com/deepmind/graph_nets/blob/master/graph_nets/blocks.py?l=116)<!-- blocks.broadcast_sender_nodes_to_edges .code-reference -->
+### [`blocks.broadcast_sender_nodes_to_edges(graph, name='broadcast_sender_nodes_to_edges')`](https://github.com/deepmind/graph_nets/blob/master/graph_nets/blocks.py?l=132)<!-- blocks.broadcast_sender_nodes_to_edges .code-reference -->
 
 Broadcasts the node features to the edges they are sending into.
 
@@ -1911,7 +1917,7 @@ Broadcasts the node features to the edges they are sending into.
 * `ValueError`: If either `graph.nodes` or `graph.senders` is `None`.
 
 
-### [`blocks.unsorted_segment_max_or_zero(values, indices, num_groups, name='unsorted_segment_max_or_zero')`](https://github.com/deepmind/graph_nets/blob/master/graph_nets/blocks.py?l=347)<!-- blocks.unsorted_segment_max_or_zero .code-reference -->
+### [`blocks.unsorted_segment_max_or_zero(values, indices, num_groups, name='unsorted_segment_max_or_zero')`](https://github.com/deepmind/graph_nets/blob/master/graph_nets/blocks.py?l=365)<!-- blocks.unsorted_segment_max_or_zero .code-reference -->
 
 Aggregates information using elementwise max.
 
@@ -1932,7 +1938,7 @@ would do).
   A `Tensor` of the same type as `values`.
 
 
-### [`blocks.unsorted_segment_min_or_zero(values, indices, num_groups, name='unsorted_segment_min_or_zero')`](https://github.com/deepmind/graph_nets/blob/master/graph_nets/blocks.py?l=325)<!-- blocks.unsorted_segment_min_or_zero .code-reference -->
+### [`blocks.unsorted_segment_min_or_zero(values, indices, num_groups, name='unsorted_segment_min_or_zero')`](https://github.com/deepmind/graph_nets/blob/master/graph_nets/blocks.py?l=343)<!-- blocks.unsorted_segment_min_or_zero .code-reference -->
 
 Aggregates information using elementwise min.
 
@@ -2061,7 +2067,7 @@ uses its receivers and senders information. The output graph has the same
 value in edge and global fields as the input graph. The edge and global
 features fields may have a `None` value in the input `gn_graphs.GraphsTuple`.
 
-#### [`modules.CommNet.__init__(edge_model_fn, node_encoder_model_fn, node_model_fn, reducer=<function unsorted_segment_sum>, name='comm_net')`](https://github.com/deepmind/graph_nets/blob/master/graph_nets/modules.py?l=469)<!-- modules.CommNet.__init__ .code-reference -->
+#### [`modules.CommNet.__init__(edge_model_fn, node_encoder_model_fn, node_model_fn, reducer=<function unsorted_segment_sum>, name='comm_net')`](https://github.com/deepmind/graph_nets/blob/master/graph_nets/modules.py?l=520)<!-- modules.CommNet.__init__ .code-reference -->
 
 Initializes the CommNet module.
 
@@ -2083,7 +2089,7 @@ Initializes the CommNet module.
 * `name`: The module name.
 
 
-#### [`modules.CommNet.__call__(graph)`](https://github.com/deepmind/graph_nets/blob/master/graph_nets/modules.py?l=520)<!-- modules.CommNet.__call__ .code-reference -->
+#### [`modules.CommNet.__call__(graph, edge_model_kwargs=None, node_encoder_model_kwargs=None, node_model_kwargs=None)`](https://github.com/deepmind/graph_nets/blob/master/graph_nets/modules.py?l=571)<!-- modules.CommNet.__call__ .code-reference -->
 
 Connects the CommNet network.
 
@@ -2092,6 +2098,12 @@ Connects the CommNet network.
 
 * `graph`: A `graphs.GraphsTuple` containing `Tensor`s, with non-`None` nodes,
     receivers and senders.
+* `edge_model_kwargs`: Optional keyword arguments to pass to
+    the edge block model.
+* `node_encoder_model_kwargs`: Optional keyword arguments to pass to
+    the node block ecoder model.
+* `node_model_kwargs`: Optional keyword arguments to pass to
+    the node block model.
 
 ##### Returns:
 
@@ -2111,7 +2123,7 @@ Returns the subgraphs created by this module so far.
 
 #### [`modules.CommNet.defun()`](https://github.com/deepmind/sonnet/blob/master/sonnet/python/modules/base.py)<!-- modules.CommNet.defun .code-reference -->
 
-Wraps this modules call method in a callable graph function.
+Wraps this module's call method in a callable graph function.
 
 
 #### [`modules.CommNet.defun_wrapped`](https://github.com/deepmind/sonnet/blob/master/sonnet/python/modules/base.py)<!-- modules.CommNet.defun_wrapped .code-reference -->
@@ -2337,7 +2349,7 @@ receivers or senders; the output graph has the same value in those fields as
 the input graph. Those fields can also have `None` values in the input
 `graphs.GraphsTuple`.
 
-#### [`modules.DeepSets.__init__(node_model_fn, global_model_fn, reducer=<function unsorted_segment_sum>, name='deep_sets')`](https://github.com/deepmind/graph_nets/blob/master/graph_nets/modules.py?l=400)<!-- modules.DeepSets.__init__ .code-reference -->
+#### [`modules.DeepSets.__init__(node_model_fn, global_model_fn, reducer=<function unsorted_segment_sum>, name='deep_sets')`](https://github.com/deepmind/graph_nets/blob/master/graph_nets/modules.py?l=443)<!-- modules.DeepSets.__init__ .code-reference -->
 
 Initializes the DeepSets module.
 
@@ -2356,7 +2368,7 @@ Initializes the DeepSets module.
 * `name`: The module name.
 
 
-#### [`modules.DeepSets.__call__(graph)`](https://github.com/deepmind/graph_nets/blob/master/graph_nets/modules.py?l=435)<!-- modules.DeepSets.__call__ .code-reference -->
+#### [`modules.DeepSets.__call__(graph, node_model_kwargs=None, global_model_kwargs=None)`](https://github.com/deepmind/graph_nets/blob/master/graph_nets/modules.py?l=478)<!-- modules.DeepSets.__call__ .code-reference -->
 
 Connects the DeepSets network.
 
@@ -2368,6 +2380,10 @@ Connects the DeepSets network.
     global of `graph` should be concatenable on the last axis (i.e. the
     shapes of `graph.nodes` and `graph.globals` must match but for their
     first and last axis).
+* `node_model_kwargs`: Optional keyword arguments to pass to
+    the node block model.
+* `global_model_kwargs`: Optional keyword arguments to pass to
+    the global block model.
 
 ##### Returns:
 
@@ -2381,7 +2397,7 @@ Returns the subgraphs created by this module so far.
 
 #### [`modules.DeepSets.defun()`](https://github.com/deepmind/sonnet/blob/master/sonnet/python/modules/base.py)<!-- modules.DeepSets.defun .code-reference -->
 
-Wraps this modules call method in a callable graph function.
+Wraps this module's call method in a callable graph function.
 
 
 #### [`modules.DeepSets.defun_wrapped`](https://github.com/deepmind/sonnet/blob/master/sonnet/python/modules/base.py)<!-- modules.DeepSets.defun_wrapped .code-reference -->
@@ -2588,7 +2604,7 @@ each element of the graph (edges, nodes and globals) in parallel and
 independently of the other elements. It can be used to encode or
 decode the elements of a graph.
 
-#### [`modules.GraphIndependent.__init__(edge_model_fn=None, node_model_fn=None, global_model_fn=None, name='graph_independent')`](https://github.com/deepmind/graph_nets/blob/master/graph_nets/modules.py?l=314)<!-- modules.GraphIndependent.__init__ .code-reference -->
+#### [`modules.GraphIndependent.__init__(edge_model_fn=None, node_model_fn=None, global_model_fn=None, name='graph_independent')`](https://github.com/deepmind/graph_nets/blob/master/graph_nets/modules.py?l=342)<!-- modules.GraphIndependent.__init__ .code-reference -->
 
 Initializes the GraphIndependent module.
 
@@ -2607,7 +2623,7 @@ Initializes the GraphIndependent module.
 * `name`: The module name.
 
 
-#### [`modules.GraphIndependent.__call__(graph)`](https://github.com/deepmind/graph_nets/blob/master/graph_nets/modules.py?l=355)<!-- modules.GraphIndependent.__call__ .code-reference -->
+#### [`modules.GraphIndependent.__call__(graph, edge_model_kwargs=None, node_model_kwargs=None, global_model_kwargs=None)`](https://github.com/deepmind/graph_nets/blob/master/graph_nets/modules.py?l=383)<!-- modules.GraphIndependent.__call__ .code-reference -->
 
 Connects the GraphIndependent.
 
@@ -2616,6 +2632,12 @@ Connects the GraphIndependent.
 
 * `graph`: A `graphs.GraphsTuple` containing non-`None` edges, nodes and
     globals.
+* `edge_model_kwargs`: Optional keyword arguments to pass to
+    the edge block model.
+* `node_model_kwargs`: Optional keyword arguments to pass to
+    the node block model.
+* `global_model_kwargs`: Optional keyword arguments to pass to
+    the global block model.
 
 ##### Returns:
 
@@ -2629,7 +2651,7 @@ Returns the subgraphs created by this module so far.
 
 #### [`modules.GraphIndependent.defun()`](https://github.com/deepmind/sonnet/blob/master/sonnet/python/modules/base.py)<!-- modules.GraphIndependent.defun .code-reference -->
 
-Wraps this modules call method in a callable graph function.
+Wraps this module's call method in a callable graph function.
 
 
 #### [`modules.GraphIndependent.defun_wrapped`](https://github.com/deepmind/sonnet/blob/master/sonnet/python/modules/base.py)<!-- modules.GraphIndependent.defun_wrapped .code-reference -->
@@ -2833,7 +2855,7 @@ Implementation of a Graph Network.
 
 See https://arxiv.org/abs/1806.01261 for more details.
 
-#### [`modules.GraphNetwork.__init__(edge_model_fn, node_model_fn, global_model_fn, reducer=<function unsorted_segment_sum>, edge_block_opt=None, node_block_opt=None, global_block_opt=None, name='graph_network')`](https://github.com/deepmind/graph_nets/blob/master/graph_nets/modules.py?l=238)<!-- modules.GraphNetwork.__init__ .code-reference -->
+#### [`modules.GraphNetwork.__init__(edge_model_fn, node_model_fn, global_model_fn, reducer=<function unsorted_segment_sum>, edge_block_opt=None, node_block_opt=None, global_block_opt=None, name='graph_network')`](https://github.com/deepmind/graph_nets/blob/master/graph_nets/modules.py?l=254)<!-- modules.GraphNetwork.__init__ .code-reference -->
 
 Initializes the GraphNetwork module.
 
@@ -2867,7 +2889,7 @@ Initializes the GraphNetwork module.
 * `name`: The module name.
 
 
-#### [`modules.GraphNetwork.__call__(graph)`](https://github.com/deepmind/graph_nets/blob/master/graph_nets/modules.py?l=289)<!-- modules.GraphNetwork.__call__ .code-reference -->
+#### [`modules.GraphNetwork.__call__(graph, edge_model_kwargs=None, node_model_kwargs=None, global_model_kwargs=None)`](https://github.com/deepmind/graph_nets/blob/master/graph_nets/modules.py?l=305)<!-- modules.GraphNetwork.__call__ .code-reference -->
 
 Connects the GraphNetwork.
 
@@ -2879,6 +2901,12 @@ Connects the GraphNetwork.
     configuration, no `None` field is allowed. Moreover, when using the
     default configuration, the features of each nodes, edges and globals of
     `graph` should be concatenable on the last dimension.
+* `edge_model_kwargs`: Optional keyword arguments to pass to
+    the edge block model.
+* `node_model_kwargs`: Optional keyword arguments to pass to
+    the node block model.
+* `global_model_kwargs`: Optional keyword arguments to pass to
+    the global block model.
 
 ##### Returns:
 
@@ -2892,7 +2920,7 @@ Returns the subgraphs created by this module so far.
 
 #### [`modules.GraphNetwork.defun()`](https://github.com/deepmind/sonnet/blob/master/sonnet/python/modules/base.py)<!-- modules.GraphNetwork.defun .code-reference -->
 
-Wraps this modules call method in a callable graph function.
+Wraps this module's call method in a callable graph function.
 
 
 #### [`modules.GraphNetwork.defun_wrapped`](https://github.com/deepmind/sonnet/blob/master/sonnet/python/modules/base.py)<!-- modules.GraphNetwork.defun_wrapped .code-reference -->
@@ -3122,7 +3150,7 @@ Initializes the InteractionNetwork module.
 * `name`: The module name.
 
 
-#### [`modules.InteractionNetwork.__call__(graph)`](https://github.com/deepmind/graph_nets/blob/master/graph_nets/modules.py?l=122)<!-- modules.InteractionNetwork.__call__ .code-reference -->
+#### [`modules.InteractionNetwork.__call__(graph, edge_model_kwargs=None, node_model_kwargs=None)`](https://github.com/deepmind/graph_nets/blob/master/graph_nets/modules.py?l=122)<!-- modules.InteractionNetwork.__call__ .code-reference -->
 
 Connects the InterationNetwork.
 
@@ -3133,6 +3161,10 @@ Connects the InterationNetwork.
     `None`. The features of each node and edge of `graph` must be
     concatenable on the last axis (i.e., the shapes of `graph.nodes` and
     `graph.edges` must match but for their first and last axis).
+* `edge_model_kwargs`: Optional keyword arguments to pass to
+    the edge block model.
+* `node_model_kwargs`: Optional keyword arguments to pass to
+    the node block model.
 
 ##### Returns:
 
@@ -3152,7 +3184,7 @@ Returns the subgraphs created by this module so far.
 
 #### [`modules.InteractionNetwork.defun()`](https://github.com/deepmind/sonnet/blob/master/sonnet/python/modules/base.py)<!-- modules.InteractionNetwork.defun .code-reference -->
 
-Wraps this modules call method in a callable graph function.
+Wraps this module's call method in a callable graph function.
 
 
 #### [`modules.InteractionNetwork.defun_wrapped`](https://github.com/deepmind/sonnet/blob/master/sonnet/python/modules/base.py)<!-- modules.InteractionNetwork.defun_wrapped .code-reference -->
@@ -3360,7 +3392,7 @@ The global and edges features of the input graph are not used, and are
 allowed to be `None` (the receivers and senders properties must be present).
 The output graph has updated, non-`None`, globals.
 
-#### [`modules.RelationNetwork.__init__(edge_model_fn, global_model_fn, reducer=<function unsorted_segment_sum>, name='relation_network')`](https://github.com/deepmind/graph_nets/blob/master/graph_nets/modules.py?l=151)<!-- modules.RelationNetwork.__init__ .code-reference -->
+#### [`modules.RelationNetwork.__init__(edge_model_fn, global_model_fn, reducer=<function unsorted_segment_sum>, name='relation_network')`](https://github.com/deepmind/graph_nets/blob/master/graph_nets/modules.py?l=159)<!-- modules.RelationNetwork.__init__ .code-reference -->
 
 Initializes the RelationNetwork module.
 
@@ -3378,7 +3410,7 @@ Initializes the RelationNetwork module.
 * `name`: The module name.
 
 
-#### [`modules.RelationNetwork.__call__(graph)`](https://github.com/deepmind/graph_nets/blob/master/graph_nets/modules.py?l=186)<!-- modules.RelationNetwork.__call__ .code-reference -->
+#### [`modules.RelationNetwork.__call__(graph, edge_model_kwargs=None, global_model_kwargs=None)`](https://github.com/deepmind/graph_nets/blob/master/graph_nets/modules.py?l=194)<!-- modules.RelationNetwork.__call__ .code-reference -->
 
 Connects the RelationNetwork.
 
@@ -3387,6 +3419,10 @@ Connects the RelationNetwork.
 
 * `graph`: A `graphs.GraphsTuple` containing `Tensor`s, except for the edges
     and global properties which may be `None`.
+* `edge_model_kwargs`: Optional keyword arguments to pass to
+    the edge block model.
+* `global_model_kwargs`: Optional keyword arguments to pass to
+    the global block model.
 
 ##### Returns:
 
@@ -3406,7 +3442,7 @@ Returns the subgraphs created by this module so far.
 
 #### [`modules.RelationNetwork.defun()`](https://github.com/deepmind/sonnet/blob/master/sonnet/python/modules/base.py)<!-- modules.RelationNetwork.defun .code-reference -->
 
-Wraps this modules call method in a callable graph function.
+Wraps this module's call method in a callable graph function.
 
 
 #### [`modules.RelationNetwork.defun_wrapped`](https://github.com/deepmind/sonnet/blob/master/sonnet/python/modules/base.py)<!-- modules.RelationNetwork.defun_wrapped .code-reference -->
@@ -3630,7 +3666,7 @@ node value computed in a two step process:
 Values, keys and queries contain a "head" axis to compute independent
 self-attention for each of the heads.
 
-#### [`modules.SelfAttention.__init__(name='self_attention')`](https://github.com/deepmind/graph_nets/blob/master/graph_nets/modules.py?l=622)<!-- modules.SelfAttention.__init__ .code-reference -->
+#### [`modules.SelfAttention.__init__(name='self_attention')`](https://github.com/deepmind/graph_nets/blob/master/graph_nets/modules.py?l=685)<!-- modules.SelfAttention.__init__ .code-reference -->
 
 Inits the module.
 
@@ -3640,7 +3676,7 @@ Inits the module.
 * `name`: The module name.
 
 
-#### [`modules.SelfAttention.__call__(node_values, node_keys, node_queries, attention_graph)`](https://github.com/deepmind/graph_nets/blob/master/graph_nets/modules.py?l=631)<!-- modules.SelfAttention.__call__ .code-reference -->
+#### [`modules.SelfAttention.__call__(node_values, node_keys, node_queries, attention_graph)`](https://github.com/deepmind/graph_nets/blob/master/graph_nets/modules.py?l=694)<!-- modules.SelfAttention.__call__ .code-reference -->
 
 Connects the multi-head self-attention module.
 
@@ -3681,7 +3717,7 @@ Returns the subgraphs created by this module so far.
 
 #### [`modules.SelfAttention.defun()`](https://github.com/deepmind/sonnet/blob/master/sonnet/python/modules/base.py)<!-- modules.SelfAttention.defun .code-reference -->
 
-Wraps this modules call method in a callable graph function.
+Wraps this module's call method in a callable graph function.
 
 
 #### [`modules.SelfAttention.defun_wrapped`](https://github.com/deepmind/sonnet/blob/master/sonnet/python/modules/base.py)<!-- modules.SelfAttention.defun_wrapped .code-reference -->
@@ -4108,7 +4144,27 @@ Constructs an instance from an iterable of networkx graphs.
 * `ValueError`: If `graph_nxs` is not an iterable of networkx instances.
 
 
-### [`utils_tf.concat(input_graphs, axis, name='graph_concat')`](https://github.com/deepmind/graph_nets/blob/master/graph_nets/utils_tf.py?l=359)<!-- utils_tf.concat .code-reference -->
+### [`class utils_tf.GraphsTupleSize`](https://github.com/deepmind/graph_nets/blob/master/graph_nets/utils_tf.py?q=class:GraphsTupleSize)<!-- utils_tf.GraphsTupleSize .code-reference -->
+
+GraphsTupleSize(num_nodes, num_edges, num_graphs)
+
+#### `utils_tf.GraphsTupleSize.num_edges`<!-- utils_tf.GraphsTupleSize.num_edges .code-reference -->
+
+Alias for field number 1
+
+
+#### `utils_tf.GraphsTupleSize.num_graphs`<!-- utils_tf.GraphsTupleSize.num_graphs .code-reference -->
+
+Alias for field number 2
+
+
+#### `utils_tf.GraphsTupleSize.num_nodes`<!-- utils_tf.GraphsTupleSize.num_nodes .code-reference -->
+
+Alias for field number 0
+
+
+
+### [`utils_tf.concat(input_graphs, axis, name='graph_concat')`](https://github.com/deepmind/graph_nets/blob/master/graph_nets/utils_tf.py?l=334)<!-- utils_tf.concat .code-reference -->
 
 Returns an op that concatenates graphs along a given axis.
 
@@ -4141,7 +4197,7 @@ corresponding fields is not `None`.
     in `input_graphs` are not the same for all the graphs.
 
 
-### [`utils_tf.data_dicts_to_graphs_tuple(data_dicts, name='data_dicts_to_graphs_tuple')`](https://github.com/deepmind/graph_nets/blob/master/graph_nets/utils_tf.py?l=922)<!-- utils_tf.data_dicts_to_graphs_tuple .code-reference -->
+### [`utils_tf.data_dicts_to_graphs_tuple(data_dicts, name='data_dicts_to_graphs_tuple')`](https://github.com/deepmind/graph_nets/blob/master/graph_nets/utils_tf.py?l=945)<!-- utils_tf.data_dicts_to_graphs_tuple .code-reference -->
 
 Creates a `graphs.GraphsTuple` containing tensors from data dicts.
 
@@ -4168,7 +4224,7 @@ Creates a `graphs.GraphsTuple` containing tensors from data dicts.
   A `graphs.GraphTuple` representing the graphs in `data_dicts`.
 
 
-### [`utils_tf.fully_connect_graph_dynamic(graph, exclude_self_edges=False, name='fully_connect_graph_dynamic')`](https://github.com/deepmind/graph_nets/blob/master/graph_nets/utils_tf.py?l=762)<!-- utils_tf.fully_connect_graph_dynamic .code-reference -->
+### [`utils_tf.fully_connect_graph_dynamic(graph, exclude_self_edges=False, name='fully_connect_graph_dynamic')`](https://github.com/deepmind/graph_nets/blob/master/graph_nets/utils_tf.py?l=785)<!-- utils_tf.fully_connect_graph_dynamic .code-reference -->
 
 Adds edges to a graph by fully-connecting the nodes.
 
@@ -4195,7 +4251,7 @@ or to be known at graph building time.
     `None` in `graph`.
 
 
-### [`utils_tf.fully_connect_graph_static(graph, exclude_self_edges=False, name='fully_connect_graph_static')`](https://github.com/deepmind/graph_nets/blob/master/graph_nets/utils_tf.py?l=694)<!-- utils_tf.fully_connect_graph_static .code-reference -->
+### [`utils_tf.fully_connect_graph_static(graph, exclude_self_edges=False, name='fully_connect_graph_static')`](https://github.com/deepmind/graph_nets/blob/master/graph_nets/utils_tf.py?l=717)<!-- utils_tf.fully_connect_graph_static .code-reference -->
 
 Adds edges to a graph by fully-connecting the nodes.
 
@@ -4231,7 +4287,7 @@ case, the method may silently yield an incorrect result.
     the constantness of the number of nodes per graph).
 
 
-### [`utils_tf.get_feed_dict(placeholders, graph)`](https://github.com/deepmind/graph_nets/blob/master/graph_nets/utils_tf.py?l=226)<!-- utils_tf.get_feed_dict .code-reference -->
+### [`utils_tf.get_feed_dict(placeholders, graph)`](https://github.com/deepmind/graph_nets/blob/master/graph_nets/utils_tf.py?l=186)<!-- utils_tf.get_feed_dict .code-reference -->
 
 Feeds a `graphs.GraphsTuple` of numpy arrays or `None` into `placeholders`.
 
@@ -4269,7 +4325,7 @@ restoring the correct behavior.
     match.
 
 
-### [`utils_tf.get_graph(input_graphs, index, name='get_graph')`](https://github.com/deepmind/graph_nets/blob/master/graph_nets/utils_tf.py?l=977)<!-- utils_tf.get_graph .code-reference -->
+### [`utils_tf.get_graph(input_graphs, index, name='get_graph')`](https://github.com/deepmind/graph_nets/blob/master/graph_nets/utils_tf.py?l=1000)<!-- utils_tf.get_graph .code-reference -->
 
 Indexes into a graph.
 
@@ -4300,7 +4356,55 @@ graphs specified by the slice, and returns them into an another instance of a
 * `ValueError`: if `index` is a slice and `index.step` if not None.
 
 
-### [`utils_tf.get_num_graphs(input_graphs, name='get_num_graphs')`](https://github.com/deepmind/graph_nets/blob/master/graph_nets/utils_tf.py?l=1058)<!-- utils_tf.get_num_graphs .code-reference -->
+### [`utils_tf.get_graphs_tuple_size(graphs_tuple)`](https://github.com/deepmind/graph_nets/blob/master/graph_nets/utils_tf.py?l=1289)<!-- utils_tf.get_graphs_tuple_size .code-reference -->
+
+Calculates the total nodes, edges and graphs in a graph batch.
+
+##### Args:
+
+
+* `graphs_tuple`: A `GraphsTuple`.
+
+##### Returns:
+
+  A `GraphsTupleSizes` object containing the total number of nodes, edges and
+  graphs in the `GraphsTuple`. Each value is a scalar integer `tf.Tensor`.
+
+
+### [`utils_tf.get_mask(valid_length, full_length)`](https://github.com/deepmind/graph_nets/blob/master/graph_nets/utils_tf.py?l=1312)<!-- utils_tf.get_mask .code-reference -->
+
+Returns a mask given the valid length of a vector with trailing padding.
+
+This is useful for masking out padded elements from a loss. For example
+```
+input_graphs_tuple = ...
+input_graphs_tuple_size = get_graphs_tuple_size(input_graphs_tuple)
+padded_input_graphs_tuple = pad_graphs_tuple(input_graphs_tuple,
+     pad_nodes_to,...)
+
+
+per_node_loss # After graph_network computation.
+
+nodes_mask = get_mask(
+    input_graphs_tuple_size.nodes, pad_nodes_to)
+
+masked_per_node_loss = per_node_loss * tf.cast(
+    nodes_mask, per_node_loss.dtype)
+```
+
+##### Args:
+
+
+* `valid_length`: Length of the valid elements.
+* `full_length`: Full length of the vector after padding.
+
+##### Returns:
+
+  Boolean mask of shape [full_length], where all values are set to `True`
+  except for the last `padding_length` which are set to False.
+
+
+### [`utils_tf.get_num_graphs(input_graphs, name='get_num_graphs')`](https://github.com/deepmind/graph_nets/blob/master/graph_nets/utils_tf.py?l=1081)<!-- utils_tf.get_num_graphs .code-reference -->
 
 Returns the number of graphs (i.e. the batch size) in `input_graphs`.
 
@@ -4316,7 +4420,7 @@ Returns the number of graphs (i.e. the batch size) in `input_graphs`.
     number of graphs is dynamic).
 
 
-### [`utils_tf.identity(graph, name='graph_identity')`](https://github.com/deepmind/graph_nets/blob/master/graph_nets/utils_tf.py?l=472)<!-- utils_tf.identity .code-reference -->
+### [`utils_tf.identity(graph, name='graph_identity')`](https://github.com/deepmind/graph_nets/blob/master/graph_nets/utils_tf.py?l=442)<!-- utils_tf.identity .code-reference -->
 
 Pass each element of a graph through a `tf.identity`.
 
@@ -4341,7 +4445,7 @@ with tf.name_scope("encoder"):
   `graph_output.x = tf.identity(graph.x)`
 
 
-### [`utils_tf.make_runnable_in_session(graph, name='make_graph_runnable_in_session')`](https://github.com/deepmind/graph_nets/blob/master/graph_nets/utils_tf.py?l=497)<!-- utils_tf.make_runnable_in_session .code-reference -->
+### [`utils_tf.make_runnable_in_session(graph, name='make_graph_runnable_in_session')`](https://github.com/deepmind/graph_nets/blob/master/graph_nets/utils_tf.py?l=467)<!-- utils_tf.make_runnable_in_session .code-reference -->
 
 Allows a graph containing `None` fields to be run in a `tf.Session`.
 
@@ -4363,7 +4467,7 @@ meant to be called just before a call to `sess.run` on a Tensorflow session
   otherwise
 
 
-### [`utils_tf.nest_to_numpy(nest_of_tensors)`](https://github.com/deepmind/graph_nets/blob/master/graph_nets/utils_tf.py?l=1073)<!-- utils_tf.nest_to_numpy .code-reference -->
+### [`utils_tf.nest_to_numpy(nest_of_tensors)`](https://github.com/deepmind/graph_nets/blob/master/graph_nets/utils_tf.py?l=1096)<!-- utils_tf.nest_to_numpy .code-reference -->
 
 Converts a nest of eager tensors to a nest of numpy arrays.
 
@@ -4384,7 +4488,95 @@ tensors into a `graphs.GraphsTuple` of arrays, or nests containing
   arrays and all other elements are kept the same.
 
 
-### [`utils_tf.placeholders_from_data_dicts(data_dicts, force_dynamic_num_graphs=True, name='placeholders_from_data_dicts')`](https://github.com/deepmind/graph_nets/blob/master/graph_nets/utils_tf.py?l=270)<!-- utils_tf.placeholders_from_data_dicts .code-reference -->
+### [`utils_tf.pad_graphs_tuple(graphs_tuple, pad_nodes_to, pad_edges_to, pad_graphs_to, experimental_unconnected_padding_edges=False)`](https://github.com/deepmind/graph_nets/blob/master/graph_nets/utils_tf.py?l=1463)<!-- utils_tf.pad_graphs_tuple .code-reference -->
+
+Pads a `graphs.GraphsTuple` to fixed number of nodes, edges and graphs.
+
+The Graph Nets library treat zeros as valid parts of a graph.GraphsTuple, so
+special padding is required in order to preserve the computation. This
+method does so by adding a 'dummy' graph to the batch so that additional
+nodes/edges can't interfere with the valid graph.
+
+##### Args:
+
+
+* `graphs_tuple`: `graphs.GraphsTuple` batch of graphs.
+* `pad_nodes_to`: the size to pad node determined features to.
+* `pad_edges_to`: the size to pad edge determined features to.
+* `pad_graphs_to`: the size to pad graph determined features to.
+* `experimental_unconnected_padding_edges`: Experimental feature to prevent nans
+    in the padding graph. DISCLAIMER: This feature is extremly experimental,
+    and setting it to `True` is not recommened unless strictly necessary, and
+    understanding the implications.
+
+    If `True`, the padding graph will have `senders` and `receivers` for
+    the padding edges reference a node which does not exist (one beyond the
+    size of `nodes`).
+
+    This feature can be used to prevent any broadcasting/aggregation ops
+    between edges and nodes for the padding graph. The reason is that the
+    sum aggregations in the padding graph, which has a single node with a
+    very large number of self-edges, sometimes lead to infs or nans,
+    which may contaminate the gradients of the other valid graphs in the batch
+    with nans (even if masked out of the loss: this is related to the
+    `tf.where` issue.).
+
+    This approach relies on several numerical hacks that do not work on CPU,
+    but work on GPU and TPU (as covered by our tests):
+
+    * `tf.gather` returns zeros when the index is beyond the boundaries. From
+       https://www.tensorflow.org/api_docs/python/tf/gather
+         "Note that on CPU, if an out of bound index is found, an error is
+         returned. On GPU, if an out of bound index is found, a 0 is stored
+         in the corresponding output value."
+    * `tf.unsorted_segment_sum` drops values for negative indices. From
+       https://www.tensorflow.org/api_docs/python/tf/math/unsorted_segment_sum
+         "If the given segment ID is negative, the value is dropped and
+         will not be added to the sum of the segment."
+      We have seen empirically that it also ignores values with indices equal
+      or larger than `num_segments`. While this behavior is tested in our
+      library, we cannot guarantee that it will work in the future for all
+      unsorted_segment ops, so use at your own risk.
+
+    This fixes the appearance of nans in the node-wise edge aggregation. The
+    appearance of `nan`s is less likely in the global aggregation because in
+    the worst case, the number of nodes/edges on the padding graph is not
+    typically much larger than the number of nodes/edges in other graphs in
+    the dataset.
+
+    A less hacky approach (but more expensive, and requiring modifying model
+    code) to prevent nan's appearing in the padding graph, is by masking out
+    the graph features before they are aggregated, although for convenience
+    we usually find that it is enough to do it after each message passing
+    layer. E.g.:
+
+    ```
+    graphs_tuple_size = get_graphs_tuple_size(graphs_tuple)
+
+    padded_graphs_tuple = pad_graphs_tuple(graphs_tuple, ...)
+
+    graphs_mask = get_mask(graphs_tuple_size.num_graphs, pad_graphs_to)
+    nodes_mask = get_mask(graphs_tuple_size.num_nodes, pad_nodes_to)
+    edges_mask = get_mask(graphs_tuple_size.num_edges, pad_edges_to)
+
+    # Some computation that creates intermediate `any_padded_graphs_tuple`s
+    # after each message passing step.
+    any_padded_graphs_tuple = any_padded_graphs_tuple.replace(
+        edges=any_padded_graphs_tuple.edges * tf.cast(
+            edges_mask, tf.float32)[:, None],
+        nodes=any_padded_graphs_tuple.nodes * tf.cast(
+            nodes_mask, tf.float32)[:, None],
+        globals=any_padded_graphs_tuple.globals * tf.cast(
+            graphs_mask, tf.float32)[:, None],
+    )
+    ```
+
+##### Returns:
+
+  A `graphs.GraphsTuple` padded up to the required values.
+
+
+### [`utils_tf.placeholders_from_data_dicts(data_dicts, force_dynamic_num_graphs=True, name='placeholders_from_data_dicts')`](https://github.com/deepmind/graph_nets/blob/master/graph_nets/utils_tf.py?l=230)<!-- utils_tf.placeholders_from_data_dicts .code-reference -->
 
 Constructs placeholders compatible with a list of data dicts.
 
@@ -4402,7 +4594,7 @@ Constructs placeholders compatible with a list of data dicts.
     dimensions of the dictionaries in `data_dicts`.
 
 
-### [`utils_tf.placeholders_from_networkxs(graph_nxs, node_shape_hint=None, edge_shape_hint=None, data_type_hint=tf.float32, force_dynamic_num_graphs=True, name='placeholders_from_networkxs')`](https://github.com/deepmind/graph_nets/blob/master/graph_nets/utils_tf.py?l=291)<!-- utils_tf.placeholders_from_networkxs .code-reference -->
+### [`utils_tf.placeholders_from_networkxs(graph_nxs, node_shape_hint=None, edge_shape_hint=None, data_type_hint=tf.float32, force_dynamic_num_graphs=True, name='placeholders_from_networkxs')`](https://github.com/deepmind/graph_nets/blob/master/graph_nets/utils_tf.py?l=251)<!-- utils_tf.placeholders_from_networkxs .code-reference -->
 
 Constructs placeholders compatible with a list of networkx instances.
 
@@ -4443,7 +4635,39 @@ The networkx graph should be set up such that, for fixed shapes `node_shape`,
     dimensions of the graph_nxs.
 
 
-### [`utils_tf.repeat(tensor, repeats, axis=0, name='repeat')`](https://github.com/deepmind/graph_nets/blob/master/graph_nets/utils_tf.py?l=519)<!-- utils_tf.repeat .code-reference -->
+### [`utils_tf.remove_graphs_tuple_padding(padded_graphs_tuple, valid_size)`](https://github.com/deepmind/graph_nets/blob/master/graph_nets/utils_tf.py?l=1350)<!-- utils_tf.remove_graphs_tuple_padding .code-reference -->
+
+Strips a padded `GraphsTuple` of padding.
+
+Given a graph that has been padded by `padding` amount, remove the padding
+to recover the original graph.
+
+Often used in the sequence:
+```
+  graphs_tuple_size = get_graphs_tuple_size(graphs_tuple)
+  padded_graphs_tuple = pad_graphs_tuple(graphs_tuple,
+                                         pad_nodes_to=x,
+                                         pad_edges_to=y,
+                                         pad_graphs_to=z)
+  unpadded_graphs_tuple = remove_graphs_tuple_padding(padded_graphs_tuple,
+                                                      graphs_tuple_size)
+```
+
+
+##### Args:
+
+
+* `padded_graphs_tuple`: A `graphs.GraphsTuple` that has been padded by
+    `padding` amount.
+* `valid_size`: A `GraphsTupleSize` that represents the size of the valid graph.
+
+##### Returns:
+
+  Returns a `graphs.GraphsTuple` which is padded_graphs_tuple stripped of
+    padding.
+
+
+### [`utils_tf.repeat(tensor, repeats, axis=0, name='repeat', sum_repeats_hint=None)`](https://github.com/deepmind/graph_nets/blob/master/graph_nets/utils_tf.py?l=489)<!-- utils_tf.repeat .code-reference -->
 
 Repeats a `tf.Tensor`'s elements along an axis by custom amounts.
 
@@ -4457,13 +4681,15 @@ Equivalent to Numpy's `np.repeat`.
 * `repeats`: A 1D sequence of the number of repeats per element.
 * `axis`: An axis to repeat along. Defaults to 0.
 * `name`: (string, optional) A name for the operation.
+* `sum_repeats_hint`: Integer with the total sum of repeats in case it is
+    known at graph definition time.
 
 ##### Returns:
 
   The `tf.Tensor` with repeated values.
 
 
-### [`utils_tf.set_zero_edge_features(graph, edge_size, dtype=tf.float32, name='set_zero_edge_features')`](https://github.com/deepmind/graph_nets/blob/master/graph_nets/utils_tf.py?l=851)<!-- utils_tf.set_zero_edge_features .code-reference -->
+### [`utils_tf.set_zero_edge_features(graph, edge_size, dtype=tf.float32, name='set_zero_edge_features')`](https://github.com/deepmind/graph_nets/blob/master/graph_nets/utils_tf.py?l=874)<!-- utils_tf.set_zero_edge_features .code-reference -->
 
 Completes the edge state of a graph.
 
@@ -4489,7 +4715,7 @@ Completes the edge state of a graph.
 * `ValueError`: If `edge_size` is None.
 
 
-### [`utils_tf.set_zero_global_features(graph, global_size, dtype=tf.float32, name='set_zero_global_features')`](https://github.com/deepmind/graph_nets/blob/master/graph_nets/utils_tf.py?l=891)<!-- utils_tf.set_zero_global_features .code-reference -->
+### [`utils_tf.set_zero_global_features(graph, global_size, dtype=tf.float32, name='set_zero_global_features')`](https://github.com/deepmind/graph_nets/blob/master/graph_nets/utils_tf.py?l=914)<!-- utils_tf.set_zero_global_features .code-reference -->
 
 Completes the global state of a graph.
 
@@ -4513,7 +4739,7 @@ Completes the global state of a graph.
 * `ValueError`: If `global_size` is not `None`.
 
 
-### [`utils_tf.set_zero_node_features(graph, node_size, dtype=tf.float32, name='set_zero_node_features')`](https://github.com/deepmind/graph_nets/blob/master/graph_nets/utils_tf.py?l=819)<!-- utils_tf.set_zero_node_features .code-reference -->
+### [`utils_tf.set_zero_node_features(graph, node_size, dtype=tf.float32, name='set_zero_node_features')`](https://github.com/deepmind/graph_nets/blob/master/graph_nets/utils_tf.py?l=842)<!-- utils_tf.set_zero_node_features .code-reference -->
 
 Completes the node state of a graph.
 
@@ -4538,7 +4764,7 @@ Completes the node state of a graph.
 * `ValueError`: If `node_size` is None.
 
 
-### [`utils_tf.specs_from_graphs_tuple(graphs_tuple_sample, dynamic_num_graphs=False, dynamic_num_nodes=True, dynamic_num_edges=True, description_fn=<class 'tf.TensorSpec'>)`](https://github.com/deepmind/graph_nets/blob/master/graph_nets/utils_tf.py?l=1094)<!-- utils_tf.specs_from_graphs_tuple .code-reference -->
+### [`utils_tf.specs_from_graphs_tuple(graphs_tuple_sample, dynamic_num_graphs=False, dynamic_num_nodes=True, dynamic_num_edges=True, description_fn=<class 'tf.TensorSpec'>)`](https://github.com/deepmind/graph_nets/blob/master/graph_nets/utils_tf.py?l=1117)<!-- utils_tf.specs_from_graphs_tuple .code-reference -->
 
 Returns the `TensorSpec` specification for a given `GraphsTuple`.
 
@@ -4570,6 +4796,11 @@ for i in range(num_training_steps):
     invalid signature specification for `tf.function`. If your graph has
     `None`s use `utils_tf.set_zero_edge_features`,
     `utils_tf.set_zero_node_features` or `utils_tf.set_zero_global_features`.
+    This method also returns the signature for `GraphTuple`s with nests of
+    tensors in the feature fields (`nodes`, `edges`, `globals`), including
+    empty nests (e.g. empty list, dict, or tuple). Nested node, edge and
+    global feature tensors, should usually have the same leading dimension as
+    all other node, edge and global feature tensors respectively.
 * `dynamic_num_graphs`: Boolean indicating if the number of graphs in each
     `GraphsTuple` will be variable across examples.
 * `dynamic_num_nodes`: Boolean indicating if number of nodes per graph will be
@@ -4585,8 +4816,8 @@ for i in range(num_training_steps):
 
 ##### Returns:
 
-  A `GraphsTuple` with fields replaced by `TensorSpec` with shape and dtype of
-  the field contents.
+  A `GraphsTuple` with tensors replaced by `TensorSpec` with shape and dtype
+  of the field contents.
 
 ##### Raises:
 
@@ -4594,7 +4825,7 @@ for i in range(num_training_steps):
 * `ValueError`: If a `GraphsTuple` has a field with `None`.
 
 
-### [`utils_tf.stop_gradient(graph, stop_edges=True, stop_nodes=True, stop_globals=True, name='graph_stop_gradient')`](https://github.com/deepmind/graph_nets/blob/master/graph_nets/utils_tf.py?l=427)<!-- utils_tf.stop_gradient .code-reference -->
+### [`utils_tf.stop_gradient(graph, stop_edges=True, stop_nodes=True, stop_globals=True, name='graph_stop_gradient')`](https://github.com/deepmind/graph_nets/blob/master/graph_nets/utils_tf.py?l=397)<!-- utils_tf.stop_gradient .code-reference -->
 
 Stops the gradient flow through a graph.
 

@@ -67,7 +67,7 @@ elif _sonnet_major_version == 2:
 
     def __init__(self, *args, **kwargs):
       super(AbstractModule, self).__init__(*args, **kwargs)
-      self.__call__.__func__.__doc__ = self._build.__doc__
+      self.__call__.__func__.__doc__ = self._build.__doc__  # pytype: disable=attribute-error
 
     # In snt2 calls to `_enter_variable_scope` are ignored.
     @contextlib.contextmanager

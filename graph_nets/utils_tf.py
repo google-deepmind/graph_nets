@@ -18,7 +18,7 @@
 This module contains utility functions to operate with `Tensor`s representations
 of graphs, in particular:
 
-  - `build_placeholders_from_data_dicts` and `build_placeholders_from_networkx`
+  - `placeholders_from_data_dicts` and `placeholders_from_networkx`
      create placeholder structures to represent graphs;
 
   - `get_feed_dict` allow to create a `feed_dict` from a `graphs.GraphsTuple`
@@ -64,11 +64,12 @@ from __future__ import print_function
 import collections
 import functools
 
+from absl import logging
 from graph_nets import graphs
 from graph_nets import utils_np
 import six
 from six.moves import range
-import tensorflow as tf
+import tensorflow as tf  
 import tree
 
 
@@ -308,6 +309,21 @@ def _compute_stacked_offsets(sizes, repeats):
   return repeat(offset_values, repeats)
 
 
+def _nested_concatenate(input_graphs, field_name, axis):
+  """Concatenates a possibly nested feature field of a list of input graphs."""
+  features_list = [getattr(gr, field_name) for gr in input_graphs
+                   if getattr(gr, field_name) is not None]
+  if not features_list:
+    return None
+
+  if len(features_list) < len(input_graphs):
+    raise ValueError(
+        "All graphs or no graphs must contain {} features.".format(field_name))
+
+  name = "concat_" + field_name
+  return tree.map_structure(lambda *x: tf.concat(x, axis, name), *features_list)
+
+
 def concat(input_graphs, axis, name="graph_concat"):
   """Returns an op that concatenates graphs along a given axis.
 
@@ -339,17 +355,12 @@ def concat(input_graphs, axis, name="graph_concat"):
   utils_np._check_valid_sets_of_keys([gr._asdict() for gr in input_graphs])  # pylint: disable=protected-access
   if len(input_graphs) == 1:
     return input_graphs[0]
-  nodes = [gr.nodes for gr in input_graphs if gr.nodes is not None]
-  edges = [gr.edges for gr in input_graphs if gr.edges is not None]
-  globals_ = [gr.globals for gr in input_graphs if gr.globals is not None]
 
   with tf.name_scope(name):
-    nodes = tf.concat(nodes, axis, name="concat_nodes") if nodes else None
-    edges = tf.concat(edges, axis, name="concat_edges") if edges else None
-    if globals_:
-      globals_ = tf.concat(globals_, axis, name="concat_globals")
-    else:
-      globals_ = None
+    nodes = _nested_concatenate(input_graphs, NODES, axis)
+    edges = _nested_concatenate(input_graphs, EDGES, axis)
+    globals_ = _nested_concatenate(input_graphs, GLOBALS, axis)
+
     output = input_graphs[0].replace(nodes=nodes, edges=edges, globals=globals_)
     if axis != 0:
       return output
@@ -1205,3 +1216,373 @@ def specs_from_graphs_tuple(
     graphs_tuple_description_fields[field_name] = field_spec
 
   return graphs.GraphsTuple(**graphs_tuple_description_fields)
+
+
+# Convenience data container for carrying around padding.
+GraphsTupleSize = collections.namedtuple(
+    "GraphsTupleSize", ["num_nodes", "num_edges", "num_graphs"])
+
+# Mapping indicating the leading size of `GraphsTuple` fields according to the
+# number of nodes/edges/graphs in the `GraphsTuple`.
+_GRAPH_ATTRIBUTE_TO_SIZE_MAP = {
+    graphs.NODES: "num_nodes",
+    graphs.EDGES: "num_edges",
+    graphs.RECEIVERS: "num_edges",
+    graphs.SENDERS: "num_edges",
+    graphs.GLOBALS: "num_graphs",
+    graphs.N_NODE: "num_graphs",
+    graphs.N_EDGE: "num_graphs"
+}
+
+
+def _get_field_size_from_size_tuple(size_tuple, graphs_field_name):
+  field_size_name = _GRAPH_ATTRIBUTE_TO_SIZE_MAP[graphs_field_name]
+  return getattr(size_tuple, field_size_name)
+
+
+def _assert_if_space_for_first_padding_graph(
+    graphs_tuple, graphs_tuple_padded_sizes):
+  """Checks if a given graph can fit in the provided padded shape.
+
+  Args:
+    graphs_tuple: A `graphs.GraphsTuple` that is checked for size.
+    graphs_tuple_padded_sizes: A `GraphsTupleSize` with the sized to pad to.
+
+  Returns:
+    An assertion op indicating whether there is space for the padding graph.
+  """
+
+  # Padding graph needs to have at least one graph, and at least one node,
+  # but should not need extra edges, so the number of padded nodes and graphs
+  # needs to be strictly larger, than the input sizes, but it is ok if the
+  # number of padded edges are equal to the number of input edges.
+  graphs_tuple_sizes = get_graphs_tuple_size(graphs_tuple)
+
+  all_fields_fit = [
+      tf.less_equal(graphs_tuple_sizes.num_edges,
+                    graphs_tuple_padded_sizes.num_edges),
+      tf.less(graphs_tuple_sizes.num_nodes,
+              graphs_tuple_padded_sizes.num_nodes),
+      tf.less(graphs_tuple_sizes.num_graphs,
+              graphs_tuple_padded_sizes.num_graphs),
+  ]
+  all_fields_fit = functools.reduce(tf.math.logical_and, all_fields_fit)
+
+  return tf.Assert(all_fields_fit, [
+      "There is not enough space to pad the GraphsTuple "
+      " with sizes (#nodes, #edges, #graphs):", graphs_tuple_sizes,
+      " to padded sizes of :", graphs_tuple_padded_sizes,
+      "`pad_edges_to` must be larger or equal to the maximum number of edges "
+      "in any `GraphsTuple` and `pad_nodes_to`/`pad_graphs_to` must be "
+      "strictly larger than the maximum number of nodes/graphs in any "
+      "`GraphsTuple`."
+  ])
+
+
+def get_graphs_tuple_size(graphs_tuple):
+  """Calculates the total nodes, edges and graphs in a graph batch.
+
+  Args:
+    graphs_tuple: A `GraphsTuple`.
+
+  Returns:
+    A `GraphsTupleSizes` object containing the total number of nodes, edges and
+    graphs in the `GraphsTuple`. Each value is a scalar integer `tf.Tensor`.
+
+  """
+  num_nodes = tf.reduce_sum(graphs_tuple.n_node)
+  num_edges = tf.reduce_sum(graphs_tuple.n_edge)
+  num_graphs = tf.shape(graphs_tuple.n_node)[0]
+  return GraphsTupleSize(num_nodes, num_edges, num_graphs)
+
+
+def _get_required_padding_sizes(graphs_tuple, padded_size):
+  """Gets the padding size, given a GraphsTuple and the total padded sizes."""
+  graph_size = get_graphs_tuple_size(graphs_tuple)
+  return GraphsTupleSize(*(b - c for b, c in zip(padded_size, graph_size)))
+
+
+def get_mask(valid_length, full_length):
+  """Returns a mask given the valid length of a vector with trailing padding.
+
+  This is useful for masking out padded elements from a loss. For example
+  ```
+  input_graphs_tuple = ...
+  input_graphs_tuple_size = get_graphs_tuple_size(input_graphs_tuple)
+  padded_input_graphs_tuple = pad_graphs_tuple(input_graphs_tuple,
+       pad_nodes_to,...)
+
+
+  per_node_loss # After graph_network computation.
+
+  nodes_mask = get_mask(
+      input_graphs_tuple_size.nodes, pad_nodes_to)
+
+  masked_per_node_loss = per_node_loss * tf.cast(
+      nodes_mask, per_node_loss.dtype)
+  ```
+
+  Args:
+    valid_length: Length of the valid elements.
+    full_length: Full length of the vector after padding.
+
+  Returns:
+    Boolean mask of shape [full_length], where all values are set to `True`
+    except for the last `padding_length` which are set to False.
+  """
+  valid_length = tf.cast(valid_length, tf.int32)
+  full_length = tf.cast(full_length, tf.int32)
+  # This implementation allows for statically sized shapes, rather than
+  # using concat([tf.ones([valid_length]), tf.zeros([full_length-valid_length])]
+  # which has intermediate tensors with shapes not know statically.
+  field_mask = tf.range(full_length)
+  field_mask = field_mask < valid_length
+  return field_mask
+
+
+def remove_graphs_tuple_padding(padded_graphs_tuple, valid_size):
+  """Strips a padded `GraphsTuple` of padding.
+
+  Given a graph that has been padded by `padding` amount, remove the padding
+  to recover the original graph.
+
+  Often used in the sequence:
+  ```
+    graphs_tuple_size = get_graphs_tuple_size(graphs_tuple)
+    padded_graphs_tuple = pad_graphs_tuple(graphs_tuple,
+                                           pad_nodes_to=x,
+                                           pad_edges_to=y,
+                                           pad_graphs_to=z)
+    unpadded_graphs_tuple = remove_graphs_tuple_padding(padded_graphs_tuple,
+                                                        graphs_tuple_size)
+  ```
+
+
+  Args:
+    padded_graphs_tuple: A `graphs.GraphsTuple` that has been padded by
+      `padding` amount.
+    valid_size: A `GraphsTupleSize` that represents the size of the valid graph.
+
+  Returns:
+    Returns a `graphs.GraphsTuple` which is padded_graphs_tuple stripped of
+      padding.
+  """
+  stripped_graph_kwargs = {}
+  graph_dict = padded_graphs_tuple._asdict()  # pylint: disable=protected-access
+
+  for field, tensor_nest in graph_dict.items():
+    field_valid_size = _get_field_size_from_size_tuple(valid_size, field)
+    strip_fn = lambda x: x[:field_valid_size]  # pylint:disable=cell-var-from-loop
+    stripped_field = tree.map_structure(strip_fn, tensor_nest)
+    stripped_graph_kwargs[field] = stripped_field
+  return graphs.GraphsTuple(**stripped_graph_kwargs)
+
+
+def _pad_tensor(tensor, field, padding_size):
+  """Pads a tensor on the first dimensions with the padding size.
+
+  Args:
+    tensor: tf.Tensor of size [batch_dim, x1, ..., xn].
+    field: Text, the field of `graphs.GraphsTuple` to pad.
+    padding_size: A tuple representing the size of padding of the graph.
+
+  Returns:
+    A tf.Tensor of size [batch_dim + padding, x1, ..., xn] padded with zeros.
+  """
+  padding = _get_field_size_from_size_tuple(padding_size, field)
+  padding_tensor = tf.zeros(
+      [padding] + tensor.shape.as_list()[1:],
+      dtype=tensor.dtype,
+      name="pad_zeros_{}".format(field))
+  return tf.concat((tensor, padding_tensor), axis=0)
+
+
+def _get_zeros_with_variable_batch_size(feature_tensor, padding_size):
+  return tf.zeros([padding_size] + feature_tensor.shape.as_list()[1:],
+                  feature_tensor.dtype)
+
+
+def _get_first_padding_graph(graphs_batch, padding_size,
+                             experimental_unconnected_padding_edges):
+  """Gets a dummy graph that pads receivers and senders.
+
+  This dummy graph will have number of nodes = padding_size.nodes and
+  number of edges = padding_size.edges. Receivers and
+  senders will be indexed with all zeros (connecting to the first node in the
+  dummy graph).
+
+  Args:
+    graphs_batch: the `graphs.GraphsTuple` to be padded.
+    padding_size: a `GraphsTupleSize` with the padding size.
+    experimental_unconnected_padding_edges: see `pad_graphs_tuple` for details.
+
+  Returns:
+    A `graphs.GraphsTuple` of a single dummy graph.
+  """
+
+  # Set the edges to belong to an index corresponding to a node that does not
+  # exist.
+  if experimental_unconnected_padding_edges:
+    logging.log_first_n(
+        logging.WARNING,
+        "Using a padding graph with unconnected edges. This is an experimental "
+        "feature which may stop working in the future, and will lead to out"
+        "of range errors on tf.scatter if the graph net computation occurs on "
+        "CPU.", 1)
+    dummy_senders_and_receivers = (
+        tf.ones([padding_size.num_edges], tf.int32) * padding_size.num_nodes)
+  else:
+    dummy_senders_and_receivers = tf.zeros([padding_size.num_edges], tf.int32)
+
+  return graphs.GraphsTuple(
+      n_node=[padding_size.num_nodes],
+      n_edge=[padding_size.num_edges],
+      nodes=tree.map_structure(
+          functools.partial(
+              _get_zeros_with_variable_batch_size,
+              padding_size=padding_size.num_nodes), graphs_batch.nodes),
+      edges=tree.map_structure(
+          functools.partial(
+              _get_zeros_with_variable_batch_size,
+              padding_size=padding_size.num_edges), graphs_batch.edges),
+      senders=dummy_senders_and_receivers,
+      receivers=dummy_senders_and_receivers,
+      globals=tree.map_structure(
+          functools.partial(
+              _get_zeros_with_variable_batch_size, padding_size=1),
+          graphs_batch.globals))
+
+
+def pad_graphs_tuple(graphs_tuple,
+                     pad_nodes_to,
+                     pad_edges_to,
+                     pad_graphs_to,
+                     experimental_unconnected_padding_edges=False):
+  """Pads a `graphs.GraphsTuple` to fixed number of nodes, edges and graphs.
+
+  The Graph Nets library treat zeros as valid parts of a graph.GraphsTuple, so
+  special padding is required in order to preserve the computation. This
+  method does so by adding a 'dummy' graph to the batch so that additional
+  nodes/edges can't interfere with the valid graph.
+
+  Args:
+    graphs_tuple: `graphs.GraphsTuple` batch of graphs.
+    pad_nodes_to: the size to pad node determined features to.
+    pad_edges_to: the size to pad edge determined features to.
+    pad_graphs_to: the size to pad graph determined features to.
+    experimental_unconnected_padding_edges: Experimental feature to prevent nans
+      in the padding graph. DISCLAIMER: This feature is extremly experimental,
+      and setting it to `True` is not recommened unless strictly necessary, and
+      understanding the implications.
+
+      If `True`, the padding graph will have `senders` and `receivers` for
+      the padding edges reference a node which does not exist (one beyond the
+      size of `nodes`).
+
+      This feature can be used to prevent any broadcasting/aggregation ops
+      between edges and nodes for the padding graph. The reason is that the
+      sum aggregations in the padding graph, which has a single node with a
+      very large number of self-edges, sometimes lead to infs or nans,
+      which may contaminate the gradients of the other valid graphs in the batch
+      with nans (even if masked out of the loss: this is related to the
+      `tf.where` issue.).
+
+      This approach relies on several numerical hacks that do not work on CPU,
+      but work on GPU and TPU (as covered by our tests):
+
+      * `tf.gather` returns zeros when the index is beyond the boundaries. From
+         https://www.tensorflow.org/api_docs/python/tf/gather
+           "Note that on CPU, if an out of bound index is found, an error is
+           returned. On GPU, if an out of bound index is found, a 0 is stored
+           in the corresponding output value."
+      * `tf.unsorted_segment_sum` drops values for negative indices. From
+         https://www.tensorflow.org/api_docs/python/tf/math/unsorted_segment_sum
+           "If the given segment ID is negative, the value is dropped and
+           will not be added to the sum of the segment."
+        We have seen empirically that it also ignores values with indices equal
+        or larger than `num_segments`. While this behavior is tested in our
+        library, we cannot guarantee that it will work in the future for all
+        unsorted_segment ops, so use at your own risk.
+
+      This fixes the appearance of nans in the node-wise edge aggregation. The
+      appearance of `nan`s is less likely in the global aggregation because in
+      the worst case, the number of nodes/edges on the padding graph is not
+      typically much larger than the number of nodes/edges in other graphs in
+      the dataset.
+
+      A less hacky approach (but more expensive, and requiring modifying model
+      code) to prevent nan's appearing in the padding graph, is by masking out
+      the graph features before they are aggregated, although for convenience
+      we usually find that it is enough to do it after each message passing
+      layer. E.g.:
+
+      ```
+      graphs_tuple_size = get_graphs_tuple_size(graphs_tuple)
+
+      padded_graphs_tuple = pad_graphs_tuple(graphs_tuple, ...)
+
+      graphs_mask = get_mask(graphs_tuple_size.num_graphs, pad_graphs_to)
+      nodes_mask = get_mask(graphs_tuple_size.num_nodes, pad_nodes_to)
+      edges_mask = get_mask(graphs_tuple_size.num_edges, pad_edges_to)
+
+      # Some computation that creates intermediate `any_padded_graphs_tuple`s
+      # after each message passing step.
+      any_padded_graphs_tuple = any_padded_graphs_tuple.replace(
+          edges=any_padded_graphs_tuple.edges * tf.cast(
+              edges_mask, tf.float32)[:, None],
+          nodes=any_padded_graphs_tuple.nodes * tf.cast(
+              nodes_mask, tf.float32)[:, None],
+          globals=any_padded_graphs_tuple.globals * tf.cast(
+              graphs_mask, tf.float32)[:, None],
+      )
+      ```
+
+  Returns:
+    A `graphs.GraphsTuple` padded up to the required values.
+  """
+  padded_sizes = GraphsTupleSize(pad_nodes_to, pad_edges_to, pad_graphs_to)
+
+  # The strategy goes as follows:
+  # 0. Make sure our `graphs_tuple` is at least 1 node and 1 graph smaller than
+  #    the padded sizes (this is required for step 1).
+  # 1. Pad with one graph with at least one node, that contains all padding
+  #    edges, and padding nodes, this will guaranteed preserved computation for
+  #    graphs in the input `GraphsTuple`.
+  # 2. Pad up to `pad_graphs_to` with graphs with no nodes and no edges.
+  # 3. Set the shapes of the padded tensors to be statically known. Otherwise
+  #    tensorflow shape inference mechanism is not smart enough to realize that
+  #    at this stage tensors have statically known sizes.
+
+  # Step 0.
+  sufficient_space_assert = _assert_if_space_for_first_padding_graph(
+      graphs_tuple, padded_sizes)
+  with tf.control_dependencies([sufficient_space_assert]):
+    padding_size = _get_required_padding_sizes(graphs_tuple, padded_sizes)
+
+  # Step 1.
+  first_padding_graph = _get_first_padding_graph(
+      graphs_tuple, padding_size, experimental_unconnected_padding_edges)
+  graphs_tuple_with_first_padding_graph = concat(
+      [graphs_tuple, first_padding_graph], axis=0)
+
+  # Step 2.
+  remaining_padding_sizes = _get_required_padding_sizes(
+      graphs_tuple_with_first_padding_graph, padded_sizes)
+  padded_batch_kwargs = {}
+  for field, tensor_dict in (
+      graphs_tuple_with_first_padding_graph._asdict().items()):  # pylint: disable=protected-access
+    field_pad_fn = functools.partial(
+        _pad_tensor, padding_size=remaining_padding_sizes, field=field)
+    padded_batch_kwargs[field] = tree.map_structure(field_pad_fn, tensor_dict)
+
+  # Step 3.
+  def _set_shape(tensor, padded_size):
+    tensor_shape = tensor.get_shape().as_list()
+    tensor.set_shape([padded_size] + tensor_shape[1:])
+    return tensor
+  for field, tensor_dict in padded_batch_kwargs.items():
+    padded_size = _get_field_size_from_size_tuple(padded_sizes, field)
+    set_shape_partial = functools.partial(_set_shape, padded_size=padded_size)
+    tensor_dict = tree.map_structure(set_shape_partial, tensor_dict)
+    padded_batch_kwargs[field] = tensor_dict
+  return graphs.GraphsTuple(**padded_batch_kwargs)

@@ -47,6 +47,23 @@ def assert_new_op_prefixes(test, expected_prefix, assert_some_new_ops=True):
     test.assertEqual(expected_prefix, op_name[:prefix_length])
 
 
+def generate_random_data_dict(
+    node_shape, edge_shape, globals_shape,
+    num_nodes_range=(15, 20), num_edges_range=(30, 35)):
+  num_nodes = np.random.randint(*num_nodes_range)
+  num_edges = np.random.randint(*num_edges_range)
+
+  return {
+      "nodes": np.random.normal(size=(num_nodes,) + node_shape),
+      "edges": np.random.normal(size=(num_edges,) + edge_shape),
+      "globals": np.random.normal(size=globals_shape),
+      "senders": np.random.randint(num_nodes, size=num_edges),
+      "receivers": np.random.randint(num_nodes, size=num_edges),
+      "n_node": num_nodes,
+      "n_edge": num_edges,
+  }
+
+
 def mask_leading_dimension(tensor):
   return tf.placeholder_with_default(tensor,
                                      [None] + tensor.get_shape().as_list()[1:])
