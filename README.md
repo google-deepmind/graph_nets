@@ -1,4 +1,4 @@
-![Graph Nets DeepMind shortest path](images/graph-nets-deepmind-shortest-path0.gif)
+![Graph Nets DeepMind shortest path](https://github.com/deepmind/graph_nets/raw/master/images/graph-nets-deepmind-shortest-path0.gif)
 
 # Graph Nets library
 
@@ -17,7 +17,7 @@ part of the broader family of "graph neural networks" (Scarselli et al., 2009).
 To learn more about graph networks, see our arXiv paper: [Relational inductive
 biases, deep learning, and graph networks](https://arxiv.org/abs/1806.01261).
 
-![Graph network](images/graph-network.png)
+![Graph network](https://github.com/deepmind/graph_nets/raw/master/images/graph-network.png)
 
 ## Installation
 
@@ -99,7 +99,7 @@ label the nodes and edges on the shortest path between any two nodes. Over a
 sequence of message-passing steps (as depicted by each step's plot), the
 model refines its prediction of the shortest path.
 
-![Shortest path](images/shortest-path.png)
+![Shortest path](https://github.com/deepmind/graph_nets/raw/master/images/shortest-path.png)
 
 ----------------
 
@@ -110,7 +110,7 @@ sort the list. After a sequence of message-passing steps, the model makes an
 accurate prediction of which elements (columns in the figure) come next after
 each other (rows).
 
-![Sort](images/sort.png)
+![Sort](https://github.com/deepmind/graph_nets/raw/master/images/sort.png)
 
 ----------------
 
@@ -123,11 +123,11 @@ a future trajectory. Each subplot below shows the true and predicted mass-spring
 system states over 50 steps. This is similar to the model and experiments in
 Battaglia et al. (2016)'s "interaction networks".
 
-![Physics](images/physics.png)
+![Physics](https://github.com/deepmind/graph_nets/raw/master/images/physics.png)
 
 ----------------
 
-#### [Run "graph nets basics demo" in browser](https://colab.research.google.com/github/deepmind/graph_nets/blob/master/graph_nets/demos/graph_nets_basics.ipynb)
+#### [Run "graph nets basics demo" in browser](https://colab.research.google.com/github/deepmind/graph_nets/blob/master/graph_nets/demos/graph_nets_basics.ipynb)  [(Run TF2 version)](https://colab.research.google.com/github/deepmind/graph_nets/blob/master/graph_nets/demos_tf2/graph_nets_basics.ipynb)
 
 The "graph nets basics demo" is a tutorial containing step by step examples
 about how to create and manipulate graphs, how to feed them into
@@ -154,11 +154,13 @@ then open a demo through the Jupyter notebook interface.
 
 ## Other graph neural network libraries
 
-If you use PyTorch, check out these high-quality open-source libraries for
-graph neural networks:
+Check out these high-quality open-source libraries for graph neural networks:
+
+* [jraph](https://github.com/deepmind/jraph): DeepMind's GNNs/GraphNets library
+for [JAX](https://github.com/google/jax).
 
 * [pytorch_geometric](https://github.com/rusty1s/pytorch_geometric): See
 [MetaLayer](https://pytorch-geometric.readthedocs.io/en/latest/modules/nn.html#torch_geometric.nn.meta.MetaLayer)
 for an analog of our Graph Nets interface.
 
-* [Deep Graph Library (DGL)](https://github.com/dmlc/dgl)
+* [Deep Graph Library (DGL)](https://github.com/dmlc/dgl).

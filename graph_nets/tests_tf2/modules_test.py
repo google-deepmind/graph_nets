@@ -153,21 +153,21 @@ class GraphIndependentTest(GraphModuleTest):
 
     edge_model_fn = functools.partial(
         snt.LayerNorm, axis=1, create_scale=False, create_offset=False)
-    edge_model_fn_with_params = lambda: functools.partial(
+    edge_model_fn_with_params = functools.partial(
         edge_model_fn(),
         scale=edge_model_kwargs["scale"],
         offset=edge_model_kwargs["offset"])
 
     node_model_fn = functools.partial(
         snt.LayerNorm, axis=1, create_scale=False, create_offset=False)
-    node_model_fn_with_params = lambda: functools.partial(
+    node_model_fn_with_params = functools.partial(
         node_model_fn(),
         scale=node_model_kwargs["scale"],
         offset=node_model_kwargs["offset"])
 
     global_model_fn = functools.partial(
         snt.LayerNorm, axis=1, create_scale=False, create_offset=False)
-    global_model_fn_with_params = lambda: functools.partial(
+    global_model_fn_with_params = functools.partial(
         global_model_fn(),
         scale=global_model_kwargs["scale"],
         offset=global_model_kwargs["offset"])
@@ -175,9 +175,9 @@ class GraphIndependentTest(GraphModuleTest):
     model = modules.GraphIndependent(
         edge_model_fn, node_model_fn, global_model_fn)
     model_with_params = modules.GraphIndependent(
-        edge_model_fn_with_params,
-        node_model_fn_with_params,
-        global_model_fn_with_params)
+        lambda: edge_model_fn_with_params,
+        lambda: node_model_fn_with_params,
+        lambda: global_model_fn_with_params)
 
     output_model = model(
         input_graph, edge_model_kwargs, node_model_kwargs, global_model_kwargs)
@@ -237,9 +237,9 @@ class GraphIndependentTest(GraphModuleTest):
               msg="gradient should flow from {} to {}".format(
                   output_field, input_field))
         else:
-          self.assertEqual(None, gradient,
-                           msg="gradient should not flow from {} to {}".format(
-                               output_field, input_field))
+          self.assertIsNone(
+              gradient, msg="gradient should not flow from {} to {}".format(
+                  output_field, input_field))
 
   @parameterized.named_parameters(
       ("differently shaped edges", "edges"),
@@ -374,30 +374,30 @@ class GraphNetworkTest(GraphModuleTest):
 
     edge_model_fn = functools.partial(
         snt.LayerNorm, axis=1, create_scale=False, create_offset=False)
-    edge_model_fn_with_params = lambda: functools.partial(
+    edge_model_fn_with_params = functools.partial(
         edge_model_fn(),
         scale=edge_model_kwargs["scale"],
         offset=edge_model_kwargs["offset"])
 
     node_model_fn = functools.partial(
         snt.LayerNorm, axis=1, create_scale=False, create_offset=False)
-    node_model_fn_with_params = lambda: functools.partial(
+    node_model_fn_with_params = functools.partial(
         node_model_fn(),
         scale=node_model_kwargs["scale"],
         offset=node_model_kwargs["offset"])
 
     global_model_fn = functools.partial(
         snt.LayerNorm, axis=1, create_scale=False, create_offset=False)
-    global_model_fn_with_params = lambda: functools.partial(
+    global_model_fn_with_params = functools.partial(
         global_model_fn(),
         scale=global_model_kwargs["scale"],
         offset=global_model_kwargs["offset"])
 
     model = modules.GraphNetwork(edge_model_fn, node_model_fn, global_model_fn)
     model_with_params = modules.GraphNetwork(
-        edge_model_fn_with_params,
-        node_model_fn_with_params,
-        global_model_fn_with_params)
+        lambda: edge_model_fn_with_params,
+        lambda: node_model_fn_with_params,
+        lambda: global_model_fn_with_params)
 
     output_model = model(
         input_graph, edge_model_kwargs, node_model_kwargs, global_model_kwargs)
@@ -672,7 +672,7 @@ class GraphNetworkTest(GraphModuleTest):
         lambda v: tf.transpose(v, [0, 2, 1, 3]), [field_to_reshape])
     graph_network = modules.GraphNetwork(
         edge_model_fn, node_model_fn, global_model_fn)
-    with self.assertRaisesRegexp(
+    with self.assertRaisesRegex(
         tf.errors.InvalidArgumentError,
         "Dimensions of inputs should match"):
       graph_network(input_graph)
@@ -685,14 +685,14 @@ class GraphNetworkTest(GraphModuleTest):
         snt.Conv2D, output_channels=10, kernel_shape=[3, 3], stride=[1, 2])
     graph_network = modules.GraphNetwork(
         edge_model_fn_2, node_model_fn, global_model_fn)
-    with self.assertRaisesRegexp(
+    with self.assertRaisesRegex(
         tf.errors.InvalidArgumentError, "Dimensions of inputs should match"):
       graph_network(input_graph)
     node_model_fn_2 = functools.partial(
         snt.Conv2D, output_channels=10, kernel_shape=[3, 3], stride=[1, 2])
     graph_network = modules.GraphNetwork(
         edge_model_fn, node_model_fn_2, global_model_fn)
-    with self.assertRaisesRegexp(
+    with self.assertRaisesRegex(
         tf.errors.InvalidArgumentError, "Dimensions of inputs should match"):
       graph_network(input_graph)
 
@@ -782,21 +782,21 @@ class InteractionNetworkTest(GraphModuleTest):
 
     edge_model_fn = functools.partial(
         snt.LayerNorm, axis=1, create_scale=False, create_offset=False)
-    edge_model_fn_with_params = lambda: functools.partial(
+    edge_model_fn_with_params = functools.partial(
         edge_model_fn(),
         scale=edge_model_kwargs["scale"],
         offset=edge_model_kwargs["offset"])
 
     node_model_fn = functools.partial(
         snt.LayerNorm, axis=1, create_scale=False, create_offset=False)
-    node_model_fn_with_params = lambda: functools.partial(
+    node_model_fn_with_params = functools.partial(
         node_model_fn(),
         scale=node_model_kwargs["scale"],
         offset=node_model_kwargs["offset"])
 
     model = modules.InteractionNetwork(edge_model_fn, node_model_fn)
     model_with_params = modules.InteractionNetwork(
-      edge_model_fn_with_params, node_model_fn_with_params)
+        lambda: edge_model_fn_with_params, lambda: node_model_fn_with_params)
 
     output_graph = utils_tf.nest_to_numpy(
         model(input_graph, edge_model_kwargs, node_model_kwargs))
@@ -839,7 +839,7 @@ class InteractionNetworkTest(GraphModuleTest):
     input_graph = input_graph.map(
         lambda v: tf.transpose(v, [0, 2, 1, 3]), [field_to_reshape])
     graph_network = modules.InteractionNetwork(edge_model_fn, node_model_fn)
-    with self.assertRaisesRegexp(
+    with self.assertRaisesRegex(
         tf.errors.InvalidArgumentError, "Dimensions of inputs should match"):
       graph_network(input_graph)
 
@@ -937,21 +937,21 @@ class RelationNetworkTest(GraphModuleTest):
 
     edge_model_fn = functools.partial(
         snt.LayerNorm, axis=1, create_scale=False, create_offset=False)
-    edge_model_fn_with_params = lambda: functools.partial(
+    edge_model_fn_with_params = functools.partial(
         edge_model_fn(),
         scale=edge_model_kwargs["scale"],
         offset=edge_model_kwargs["offset"])
 
     global_model_fn = functools.partial(
         snt.LayerNorm, axis=1, create_scale=False, create_offset=False)
-    global_model_fn_with_params = lambda: functools.partial(
+    global_model_fn_with_params = functools.partial(
         global_model_fn(),
         scale=global_model_kwargs["scale"],
         offset=global_model_kwargs["offset"])
 
     model = modules.RelationNetwork(edge_model_fn, global_model_fn)
     model_with_params = modules.RelationNetwork(
-      edge_model_fn_with_params, global_model_fn_with_params)
+        lambda: edge_model_fn_with_params, lambda: global_model_fn_with_params)
 
     output_graph = utils_tf.nest_to_numpy(
         model(input_graph, edge_model_kwargs, global_model_kwargs))
@@ -1080,21 +1080,21 @@ class DeepSetsTest(GraphModuleTest):
 
     node_model_fn = functools.partial(
         snt.LayerNorm, axis=1, create_scale=False, create_offset=False)
-    node_model_fn_with_params = lambda: functools.partial(
+    node_model_fn_with_params = functools.partial(
         node_model_fn(),
         scale=node_model_kwargs["scale"],
         offset=node_model_kwargs["offset"])
 
     global_model_fn = functools.partial(
         snt.LayerNorm, axis=1, create_scale=False, create_offset=False)
-    global_model_fn_with_params = lambda: functools.partial(
+    global_model_fn_with_params = functools.partial(
         global_model_fn(),
         scale=global_model_kwargs["scale"],
         offset=global_model_kwargs["offset"])
 
     model = modules.DeepSets(node_model_fn, global_model_fn)
     model_with_params = modules.DeepSets(
-      node_model_fn_with_params, global_model_fn_with_params)
+        lambda: node_model_fn_with_params, lambda: global_model_fn_with_params)
 
     output_graph = utils_tf.nest_to_numpy(
         model(input_graph, node_model_kwargs, global_model_kwargs))
@@ -1127,7 +1127,7 @@ class DeepSetsTest(GraphModuleTest):
     input_graph = input_graph.replace(
         nodes=tf.transpose(input_graph.nodes, [0, 2, 1, 3]))
     graph_network = modules.DeepSets(node_model_fn, global_model_fn)
-    with self.assertRaisesRegexp(
+    with self.assertRaisesRegex(
         tf.errors.InvalidArgumentError,
         "Dimensions of inputs should match"):
       graph_network(input_graph)
@@ -1256,32 +1256,32 @@ class CommNetTest(GraphModuleTest):
 
     edge_model_fn = functools.partial(
         snt.LayerNorm, axis=1, create_scale=False, create_offset=False)
-    edge_model_fn_with_params = lambda: functools.partial(
+    edge_model_fn_with_params = functools.partial(
         edge_model_fn(),
         scale=edge_model_kwargs["scale"],
         offset=edge_model_kwargs["offset"])
 
     node_encoder_model_fn = functools.partial(
         snt.LayerNorm, axis=1, create_scale=False, create_offset=False)
-    node_encoder_model_fn_with_params = lambda: functools.partial(
+    node_encoder_model_fn_with_params = functools.partial(
         node_encoder_model_fn(),
         scale=node_encoder_model_kwargs["scale"],
         offset=node_encoder_model_kwargs["offset"])
 
     node_model_fn = functools.partial(
         snt.LayerNorm, axis=1, create_scale=False, create_offset=False)
-    node_model_fn_with_params = lambda: functools.partial(
+    node_model_fn_with_params = functools.partial(
         node_model_fn(),
         scale=node_model_kwargs["scale"],
         offset=node_model_kwargs["offset"])
 
     model = modules.CommNet(edge_model_fn, node_encoder_model_fn, node_model_fn)
     model_with_params = modules.CommNet(
-        edge_model_fn_with_params,
-        node_encoder_model_fn_with_params,
-        node_model_fn_with_params)
+        lambda: edge_model_fn_with_params,
+        lambda: node_encoder_model_fn_with_params,
+        lambda: node_model_fn_with_params)
 
-    output_model =  model(
+    output_model = model(
         input_graph,
         edge_model_kwargs,
         node_encoder_model_kwargs,

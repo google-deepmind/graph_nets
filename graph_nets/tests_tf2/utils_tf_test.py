@@ -18,10 +18,13 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
+import functools
+
 from absl.testing import parameterized
 from graph_nets import graphs
 from graph_nets import utils_np
 from graph_nets import utils_tf
+from graph_nets.tests import test_utils as test_utils_tf1
 from graph_nets.tests_tf2 import test_utils
 import networkx as nx
 import numpy as np
@@ -102,7 +105,7 @@ class ConcatTest(tf.test.TestCase, parameterized.TestCase):
     graphs_ = [gr.map(lambda _: None, none_fields) for gr in graphs_]
     concat_graph = utils_tf.concat(graphs_, axis=0)
     for none_field in none_fields:
-      self.assertEqual(None, getattr(concat_graph, none_field))
+      self.assertIsNone(getattr(concat_graph, none_field))
     concat_graph = concat_graph.map(tf.no_op, none_fields)
     if "nodes" not in none_fields:
       self.assertAllEqual(
@@ -129,6 +132,60 @@ class ConcatTest(tf.test.TestCase, parameterized.TestCase):
     if "globals" not in none_fields:
       self.assertAllEqual(np.array([[0], [1], [2], [3]]), concat_graph.globals)
 
+  def test_nested_features(self):
+    graph_0 = utils_np.networkxs_to_graphs_tuple(
+        [_generate_graph(0, 3), _generate_graph(1, 2)])
+    graph_1 = utils_np.networkxs_to_graphs_tuple([_generate_graph(2, 2)])
+    graph_2 = utils_np.networkxs_to_graphs_tuple([_generate_graph(3, 3)])
+    graphs_ = [
+        gr.map(tf.convert_to_tensor, graphs.ALL_FIELDS)
+        for gr in [graph_0, graph_1, graph_2]
+    ]
+
+    def _create_nested_fields(graphs_tuple):
+      new_nodes = ({"a": graphs_tuple.nodes,
+                    "b": [graphs_tuple.nodes + 1,
+                          graphs_tuple.nodes + 2]
+                    },)
+
+      new_edges = [{"c": graphs_tuple.edges + 5,
+                    "d": (graphs_tuple.edges + 1,
+                          graphs_tuple.edges + 3),
+                    }]
+      new_globals = []
+
+      return graphs_tuple.replace(nodes=new_nodes,
+                                  edges=new_edges,
+                                  globals=new_globals)
+
+    graphs_ = [_create_nested_fields(gr) for gr in graphs_]
+    concat_graph = utils_tf.concat(graphs_, axis=0)
+
+    actual_nodes = concat_graph.nodes
+    actual_edges = concat_graph.edges
+    actual_globals = concat_graph.globals
+
+    expected_nodes = tree.map_structure(
+        lambda *x: tf.concat(x, axis=0), *[gr.nodes for gr in graphs_])
+    expected_edges = tree.map_structure(
+        lambda *x: tf.concat(x, axis=0), *[gr.edges for gr in graphs_])
+    expected_globals = tree.map_structure(
+        lambda *x: tf.concat(x, axis=0), *[gr.globals for gr in graphs_])
+
+    tree.assert_same_structure(expected_nodes, actual_nodes)
+    tree.assert_same_structure(expected_edges, actual_edges)
+    tree.assert_same_structure(expected_globals, actual_globals)
+
+    tree.map_structure(self.assertAllEqual, expected_nodes, actual_nodes)
+    tree.map_structure(self.assertAllEqual, expected_edges, actual_edges)
+    tree.map_structure(self.assertAllEqual, expected_globals, actual_globals)
+
+    # Borrowed from `test_concat_first_axis`:
+    self.assertAllEqual(np.array([3, 2, 2, 3]), concat_graph.n_node)
+    self.assertAllEqual(np.array([2, 1, 1, 2]), concat_graph.n_edge)
+    self.assertAllEqual(np.array([1, 2, 4, 6, 8, 9]), concat_graph.senders)
+    self.assertAllEqual(np.array([0, 0, 3, 5, 7, 7]), concat_graph.receivers)
+
   def test_concat_last_axis(self):
     graph0 = utils_np.networkxs_to_graphs_tuple(
         [_generate_graph(0, 3), _generate_graph(1, 2)])
@@ -148,6 +205,26 @@ class ConcatTest(tf.test.TestCase, parameterized.TestCase):
     self.assertAllEqual(np.array([1, 2, 4]), concat_graph.senders)
     self.assertAllEqual(np.array([0, 0, 3]), concat_graph.receivers)
     self.assertAllEqual(np.array([[0, 2], [1, 3]]), concat_graph.globals)
+
+  @parameterized.parameters(
+      ("nodes"),
+      ("edges"),
+      ("globals"),
+      )
+  def test_raise_all_or_no_nones(self, none_field):
+    graph_0 = utils_np.networkxs_to_graphs_tuple(
+        [_generate_graph(0, 3), _generate_graph(1, 2)])
+    graph_1 = utils_np.networkxs_to_graphs_tuple([_generate_graph(2, 2)])
+    graph_2 = utils_np.networkxs_to_graphs_tuple([_generate_graph(3, 3)])
+    graphs_ = [
+        gr.map(tf.convert_to_tensor, graphs.ALL_FIELDS)
+        for gr in [graph_0, graph_1, graph_2]
+    ]
+    graphs_[1] = graphs_[1].replace(**{none_field: None})
+    with self.assertRaisesRegex(
+        ValueError,
+        "Different set of keys found when iterating over data dictionaries."):
+      utils_tf.concat(graphs_, axis=0)
 
 
 class StopGradientsGraphTest(tf.test.TestCase, parameterized.TestCase):
@@ -193,7 +270,7 @@ class StopGradientsGraphTest(tf.test.TestCase, parameterized.TestCase):
                                   ("no_globals", "globals"))
   def test_stop_gradients_with_missing_field_raises(self, none_field):
     self._graph = self._graph.map(lambda _: None, [none_field])
-    with self.assertRaisesRegexp(ValueError, none_field):
+    with self.assertRaisesRegex(ValueError, none_field):
       utils_tf.stop_gradient(self._graph)
 
   def test_stop_gradients_default_params(self):
@@ -236,7 +313,7 @@ class IdentityTest(tf.test.TestCase, parameterized.TestCase):
         "nodes", "edges", "globals", "receivers", "senders", "n_node", "n_edge"
     ]:
       if field in none_fields:
-        self.assertEqual(None, getattr(actual_out, field))
+        self.assertIsNone(getattr(actual_out, field))
       else:
         self.assertNDArrayNear(
             getattr(expected_out, field), getattr(actual_out, field), err=1e-4)
@@ -268,7 +345,7 @@ class RunGraphWithNoneTest(tf.test.TestCase, parameterized.TestCase):
         "nodes", "edges", "globals", "receivers", "senders", "n_node", "n_edge"
     ]:
       if field in none_fields:
-        self.assertEqual(None, getattr(actual_out, field))
+        self.assertIsNone(getattr(actual_out, field))
       else:
         self.assertNDArrayNear(
             getattr(expected_out, field), getattr(actual_out, field), err=1e-4)
@@ -436,7 +513,7 @@ class GraphsCompletionTests(test_utils.GraphsTest, parameterized.TestCase):
       g.pop("senders")
       g.pop("edges")
     graphs_tuple = utils_tf.data_dicts_to_graphs_tuple(self.graphs_dicts_in)
-    with self.assertRaisesRegexp(ValueError, "receivers"):
+    with self.assertRaisesRegex(ValueError, "receivers"):
       graphs_tuple = utils_tf.set_zero_edge_features(graphs_tuple, edge_size=1)
 
   def test_fill_state_default_types(self):
@@ -573,7 +650,7 @@ class GraphsTupleConversionTests(test_utils.GraphsTest, parameterized.TestCase):
             n_edge=np.zeros_like(self.reference_graph.n_edge))
     graphs_tuple = utils_tf.data_dicts_to_graphs_tuple(self.graphs_dicts_in)
     for field in none_fields:
-      self.assertEqual(None, getattr(graphs_tuple, field))
+      self.assertIsNone(getattr(graphs_tuple, field))
     graphs_tuple = graphs_tuple.map(tf.no_op, none_fields)
     self._assert_graph_equals_np(self.reference_graph, graphs_tuple)
 
@@ -582,7 +659,7 @@ class GraphsTupleConversionTests(test_utils.GraphsTest, parameterized.TestCase):
     """Fields that cannot be missing."""
     for graph_dict in self.graphs_dicts_in:
       graph_dict[none_field] = None
-    with self.assertRaisesRegexp(ValueError, none_field):
+    with self.assertRaisesRegex(ValueError, none_field):
       utils_tf.data_dicts_to_graphs_tuple(self.graphs_dicts_in)
 
   def test_data_dicts_to_graphs_tuple_no_raise(self):
@@ -678,7 +755,7 @@ class GraphsIndexingTests(test_utils.GraphsTest, parameterized.TestCase):
     if use_slice:
       index = slice(index)
     graphs_tuple = utils_tf.data_dicts_to_graphs_tuple(self.graphs_dicts_in)
-    with self.assertRaisesRegexp(error_type, message):
+    with self.assertRaisesRegex(error_type, message):
       utils_tf.get_graph(graphs_tuple, index)
 
 
@@ -750,6 +827,258 @@ class TestNestToNumpy(test_utils.GraphsTest):
       self.assertNDArrayNear(
           tensor_or_none.numpy(),
           array_or_none, 1e-8)
+
+
+def _leading_static_shape(input_nest):
+  return tree.flatten(input_nest)[0].shape.as_list()[0]
+
+
+def _compile_with_tf_function(fn, graphs_tuple):
+
+  input_signature = utils_tf.specs_from_graphs_tuple(
+      graphs_tuple,
+      dynamic_num_graphs=True,
+      dynamic_num_nodes=True,
+      dynamic_num_edges=True,)
+
+  @functools.partial(tf.function, input_signature=[input_signature])
+  def compiled_fn(graphs_tuple):
+    assert _leading_static_shape(graphs_tuple.n_node) is None
+    assert _leading_static_shape(graphs_tuple.senders) is None
+    assert _leading_static_shape(graphs_tuple.nodes) is None
+    return fn(graphs_tuple)
+
+  return compiled_fn
+
+
+class GraphsTupleSizeTest(tf.test.TestCase, parameterized.TestCase):
+
+  def test_get_graphs_tuple_size(self):
+    data_dict = test_utils_tf1.generate_random_data_dict(
+        (1,), (1,), (1,),
+        num_nodes_range=(10, 15),
+        num_edges_range=(20, 25))
+    node_size_np = data_dict["nodes"].shape[0]
+    edge_size_np = data_dict["edges"].shape[0]
+    graphs_tuple = utils_tf.data_dicts_to_graphs_tuple(2 * [data_dict])
+
+    # Put it into a tf.function so the shapes are unknown statically.
+    compiled_fn = _compile_with_tf_function(
+        utils_tf.get_graphs_tuple_size, graphs_tuple)
+
+    graphs_tuple_size = compiled_fn(graphs_tuple)
+    node_size, edge_size, graph_size = graphs_tuple_size
+    self.assertEqual(node_size.numpy(), node_size_np * 2)
+    self.assertEqual(edge_size.numpy(), edge_size_np * 2)
+    self.assertEqual(graph_size.numpy(), 2)
+
+
+class MaskTest(tf.test.TestCase, parameterized.TestCase):
+
+  def test_get_mask(self):
+    mask = utils_tf.get_mask(10, 12)
+    self.assertAllClose(mask, np.concatenate((np.ones(10), np.zeros(2))))
+    # If the padding is smaller than the mask, get all size of padding.
+    mask = utils_tf.get_mask(10, 8)
+    self.assertAllClose(mask, np.ones(8, dtype=bool))
+    mask = utils_tf.get_mask(tf.constant(10), 12)
+    self.assertAllClose(mask, np.concatenate((np.ones(10, dtype=bool),
+                                              np.zeros(2, dtype=bool))))
+    mask = utils_tf.get_mask(tf.constant(10), tf.constant(12))
+    self.assertAllClose(mask, np.concatenate((np.ones(10, dtype=bool),
+                                              np.zeros(2, dtype=bool))))
+
+
+class PaddingTest(tf.test.TestCase, parameterized.TestCase):
+
+  @parameterized.named_parameters(
+      ("standard", False, False),
+      ("standard_nested_features", False, True),
+      ("experimental_unconnected_padding_edges", True, False),
+  )
+  def test_add_remove_padding(
+      self, experimental_unconnected_padding_edges, nested_features):
+    data_dict = test_utils_tf1.generate_random_data_dict(
+        (7,), (8,), (9,),
+        num_nodes_range=(10, 15),
+        num_edges_range=(20, 25))
+    node_size_np = data_dict["nodes"].shape[0]
+    edge_size_np = data_dict["edges"].shape[0]
+    unpadded_batch_size = 2
+    graphs_tuple = utils_tf.data_dicts_to_graphs_tuple(
+        unpadded_batch_size * [data_dict])
+
+    if nested_features:
+      graphs_tuple = graphs_tuple.replace(
+          edges=[graphs_tuple.edges, {}],
+          nodes=({"tensor": graphs_tuple.nodes},),
+          globals=([], graphs_tuple.globals,))
+
+    num_padding_nodes = 3
+    num_padding_edges = 4
+    num_padding_graphs = 5
+    pad_nodes_to = unpadded_batch_size * node_size_np + num_padding_nodes
+    pad_edges_to = unpadded_batch_size * edge_size_np + num_padding_edges
+    pad_graphs_to = unpadded_batch_size + num_padding_graphs
+
+    def _get_padded_and_recovered_graphs_tuple(graphs_tuple):
+      padded_graphs_tuple = utils_tf.pad_graphs_tuple(
+          graphs_tuple,
+          pad_nodes_to,
+          pad_edges_to,
+          pad_graphs_to,
+          experimental_unconnected_padding_edges)
+
+      # Check that we have statically defined shapes after padding.
+      self.assertEqual(
+          _leading_static_shape(padded_graphs_tuple.nodes), pad_nodes_to)
+      self.assertEqual(
+          _leading_static_shape(padded_graphs_tuple.edges), pad_edges_to)
+      self.assertEqual(
+          _leading_static_shape(padded_graphs_tuple.senders), pad_edges_to)
+      self.assertEqual(
+          _leading_static_shape(padded_graphs_tuple.receivers), pad_edges_to)
+      self.assertEqual(
+          _leading_static_shape(padded_graphs_tuple.globals), pad_graphs_to)
+      self.assertEqual(
+          _leading_static_shape(padded_graphs_tuple.n_node), pad_graphs_to)
+      self.assertEqual(
+          _leading_static_shape(padded_graphs_tuple.n_edge), pad_graphs_to)
+
+      # Check that we can remove the padding.
+      graphs_tuple_size = utils_tf.get_graphs_tuple_size(graphs_tuple)
+      recovered_graphs_tuple = utils_tf.remove_graphs_tuple_padding(
+          padded_graphs_tuple, graphs_tuple_size)
+
+      return padded_graphs_tuple, recovered_graphs_tuple
+
+    # Put it into a tf.function so the shapes are unknown statically.
+    compiled_fn = _compile_with_tf_function(
+        _get_padded_and_recovered_graphs_tuple, graphs_tuple)
+    padded_graphs_tuple, recovered_graphs_tuple = compiled_fn(graphs_tuple)
+
+    if nested_features:
+      # Check that the whole structure of the outputs are the same.
+      tree.assert_same_structure(padded_graphs_tuple, graphs_tuple)
+      tree.assert_same_structure(recovered_graphs_tuple, graphs_tuple)
+
+      # Undo the nesting for the rest of the test.
+      def remove_nesting(this_graphs_tuple):
+        return this_graphs_tuple.replace(
+            edges=this_graphs_tuple.edges[0],
+            nodes=this_graphs_tuple.nodes[0]["tensor"],
+            globals=this_graphs_tuple.globals[1])
+      graphs_tuple = remove_nesting(graphs_tuple)
+      padded_graphs_tuple = remove_nesting(padded_graphs_tuple)
+      recovered_graphs_tuple = remove_nesting(recovered_graphs_tuple)
+
+    # Inspect the padded_graphs_tuple.
+    padded_graphs_tuple_data_dicts = utils_np.graphs_tuple_to_data_dicts(
+        utils_tf.nest_to_numpy(padded_graphs_tuple))
+    graphs_tuple_data_dicts = utils_np.graphs_tuple_to_data_dicts(
+        utils_tf.nest_to_numpy(graphs_tuple))
+
+    self.assertLen(padded_graphs_tuple, pad_graphs_to)
+
+    # Check that the first 2 graphs from the padded_graphs_tuple are the same.
+    for example_i in range(unpadded_batch_size):
+      tree.map_structure(
+          self.assertAllEqual,
+          graphs_tuple_data_dicts[example_i],
+          padded_graphs_tuple_data_dicts[example_i])
+
+    padding_data_dicts = padded_graphs_tuple_data_dicts[unpadded_batch_size:]
+    # Check that the third graph contains all of the padding nodes and edges.
+
+    for i, padding_data_dict in enumerate(padding_data_dicts):
+
+      # Only the first padding graph has nodes and edges.
+      num_nodes = num_padding_nodes if i == 0 else 0
+      num_edges = num_padding_edges if i == 0 else 0
+
+      self.assertAllEqual(padding_data_dict["globals"],
+                          np.zeros([9], dtype=np.float32))
+
+      self.assertEqual(padding_data_dict["n_node"], num_nodes)
+      self.assertAllEqual(padding_data_dict["nodes"],
+                          np.zeros([num_nodes, 7], dtype=np.float32))
+      self.assertEqual(padding_data_dict["n_edge"], num_edges)
+      self.assertAllEqual(padding_data_dict["edges"],
+                          np.zeros([num_edges, 8], dtype=np.float32))
+
+      if experimental_unconnected_padding_edges:
+        self.assertAllEqual(padding_data_dict["receivers"],
+                            np.zeros([num_edges], dtype=np.int32) + num_nodes)
+        self.assertAllEqual(padding_data_dict["senders"],
+                            np.zeros([num_edges], dtype=np.int32) + num_nodes)
+      else:
+        self.assertAllEqual(padding_data_dict["receivers"],
+                            np.zeros([num_edges], dtype=np.int32))
+        self.assertAllEqual(padding_data_dict["senders"],
+                            np.zeros([num_edges], dtype=np.int32))
+
+    # Check that the recovered_graphs_tuple after removing padding is identical.
+    tree.map_structure(
+        self.assertAllEqual,
+        graphs_tuple._asdict(),
+        recovered_graphs_tuple._asdict())
+
+  @parameterized.parameters(
+      (None, False),
+      ("edges", False),
+      ("nodes", False),
+      ("graphs", False),
+      (None, True),
+      ("edges", True),
+      ("nodes", True),
+      ("graphs", True),
+  )
+  def test_raises_not_enough_space(
+      self, field_that_hits_limit, experimental_unconnected_padding_edges):
+    data_dict = test_utils_tf1.generate_random_data_dict(
+        (7,), (8,), (9,),
+        num_nodes_range=(10, 15),
+        num_edges_range=(20, 25))
+    node_size_np = data_dict["nodes"].shape[0]
+    edge_size_np = data_dict["edges"].shape[0]
+    unpadded_batch_size = 2
+    graphs_tuple = utils_tf.data_dicts_to_graphs_tuple(
+        unpadded_batch_size * [data_dict])
+
+    # Padding graph needs to have at least one graph, and at least one node,
+    # but should not need extra edges.
+    pad_edges_to = unpadded_batch_size * edge_size_np
+    pad_nodes_to = unpadded_batch_size * node_size_np + 1
+    pad_graphs_to = unpadded_batch_size + 1
+
+    if field_that_hits_limit == "edges":
+      pad_edges_to -= 1
+    elif field_that_hits_limit == "nodes":
+      pad_nodes_to -= 1
+    elif field_that_hits_limit == "graphs":
+      pad_graphs_to -= 1
+
+    def _get_padded_graphs_tuple(graphs_tuple):
+      return utils_tf.pad_graphs_tuple(
+          graphs_tuple,
+          pad_nodes_to,
+          pad_edges_to,
+          pad_graphs_to,
+          experimental_unconnected_padding_edges)
+
+    # Put it into a tf.function so the shapes are unknown statically.
+    compiled_fn = _compile_with_tf_function(
+        _get_padded_graphs_tuple, graphs_tuple)
+
+    if field_that_hits_limit is None:
+      # Should work if the test is not supposed to hit any limit.
+      compiled_fn(graphs_tuple)
+    else:
+      # Should raise an error.
+      with self.assertRaisesRegex(
+          tf.errors.InvalidArgumentError,
+          "There is not enough space to pad the GraphsTuple"):
+        compiled_fn(graphs_tuple)
 
 if __name__ == "__main__":
   tf.test.main()

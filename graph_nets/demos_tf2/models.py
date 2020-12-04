@@ -20,6 +20,7 @@ from __future__ import print_function
 
 from graph_nets import modules
 from graph_nets import utils_tf
+from six.moves import range
 import sonnet as snt
 
 

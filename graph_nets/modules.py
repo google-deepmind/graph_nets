@@ -325,7 +325,7 @@ class GraphNetwork(_base.AbstractModule):
       An output `graphs.GraphsTuple` with updated edges, nodes and globals.
     """
     node_input = self._edge_block(graph, edge_model_kwargs)
-    global_input = self._node_block( node_input, node_model_kwargs)
+    global_input = self._node_block(node_input, node_model_kwargs)
     return self._global_block(global_input, global_model_kwargs)
 
 
@@ -398,7 +398,6 @@ class GraphIndependent(_base.AbstractModule):
 
     Returns:
       An output `graphs.GraphsTuple` with updated edges, nodes and globals.
-
     """
     if edge_model_kwargs is None:
       edge_model_kwargs = {}

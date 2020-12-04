@@ -185,7 +185,7 @@ class BroadcastersTest(GraphModuleTest):
   def test_missing_field_raises_exception(self, broadcaster, none_fields):
     """Test that an error is raised if a required field is `None`."""
     input_graph = self._get_input_graph(none_fields)
-    with self.assertRaisesRegexp(
+    with self.assertRaisesRegex(
         ValueError, "field cannot be None when broadcasting"):
       broadcaster(input_graph)
 
@@ -339,7 +339,7 @@ class FieldAggregatorsTest(GraphModuleTest):
   def test_missing_field_raises_exception(self, constructor, none_field):
     """Tests that aggregator fail if a required field is missing."""
     input_graph = self._get_input_graph([none_field])
-    with self.assertRaisesRegexp(ValueError, none_field):
+    with self.assertRaisesRegex(ValueError, none_field):
       constructor(tf.math.unsorted_segment_sum)(input_graph)
 
   @parameterized.named_parameters(
@@ -483,7 +483,7 @@ class EdgeBlockTest(GraphModuleTest):
         use_receiver_nodes=use_receiver_nodes,
         use_sender_nodes=use_sender_nodes,
         use_globals=use_globals)
-    with self.assertRaisesRegexp(ValueError, "field cannot be None"):
+    with self.assertRaisesRegex(ValueError, "field cannot be None"):
       edge_block(input_graph)
 
   def test_compatible_higher_rank_no_raise(self):
@@ -517,7 +517,7 @@ class EdgeBlockTest(GraphModuleTest):
         use_sender_nodes=use_sender_nodes,
         use_globals=use_globals
     )
-    with self.assertRaisesRegexp(
+    with self.assertRaisesRegex(
         tf.errors.InvalidArgumentError, "Dimensions of inputs should match"):
       network(input_graph)
 
@@ -583,7 +583,7 @@ class EdgeBlockTest(GraphModuleTest):
 
   def test_no_input_raises_exception(self):
     """Checks that receiving no input raises an exception."""
-    with self.assertRaisesRegexp(ValueError, "At least one of "):
+    with self.assertRaisesRegex(ValueError, "At least one of "):
       blocks.EdgeBlock(
           edge_model_fn=self._edge_model_fn,
           use_edges=False,
@@ -734,7 +734,7 @@ class NodeBlockTest(GraphModuleTest):
         use_sent_edges=use_sent_edges,
         use_nodes=use_nodes,
         use_globals=use_globals)
-    with self.assertRaisesRegexp(ValueError, "field cannot be None"):
+    with self.assertRaisesRegex(ValueError, "field cannot be None"):
       node_block(input_graph)
 
   @parameterized.named_parameters(
@@ -747,7 +747,7 @@ class NodeBlockTest(GraphModuleTest):
       self, use_received_edges, use_sent_edges,
       received_edges_reducer, sent_edges_reducer):
     """Checks that missing a required aggregation argument raises an error."""
-    with self.assertRaisesRegexp(ValueError, "should not be None"):
+    with self.assertRaisesRegex(ValueError, "should not be None"):
       blocks.NodeBlock(
           node_model_fn=self._node_model_fn,
           use_received_edges=use_received_edges,
@@ -788,7 +788,7 @@ class NodeBlockTest(GraphModuleTest):
         use_nodes=use_nodes,
         use_globals=use_globals
     )
-    with self.assertRaisesRegexp(
+    with self.assertRaisesRegex(
         tf.errors.InvalidArgumentError,
         "Dimensions of inputs should match"):
       network(input_graph)
@@ -859,7 +859,7 @@ class NodeBlockTest(GraphModuleTest):
 
   def test_no_input_raises_exception(self):
     """Checks that receiving no input raises an exception."""
-    with self.assertRaisesRegexp(ValueError, "At least one of "):
+    with self.assertRaisesRegex(ValueError, "At least one of "):
       blocks.NodeBlock(
           node_model_fn=self._node_model_fn,
           use_received_edges=False,
@@ -998,7 +998,7 @@ class GlobalBlockTest(GraphModuleTest):
         use_edges=use_edges,
         use_nodes=use_nodes,
         use_globals=use_globals)
-    with self.assertRaisesRegexp(ValueError, "field cannot be None"):
+    with self.assertRaisesRegex(ValueError, "field cannot be None"):
       global_block(input_graph)
 
   @parameterized.named_parameters(
@@ -1067,7 +1067,7 @@ class GlobalBlockTest(GraphModuleTest):
         use_nodes=use_nodes,
         use_globals=use_globals
     )
-    with self.assertRaisesRegexp(
+    with self.assertRaisesRegex(
         tf.errors.InvalidArgumentError,
         "Dimensions of inputs should match"):
       network(input_graph)
@@ -1096,7 +1096,7 @@ class GlobalBlockTest(GraphModuleTest):
 
   def test_no_input_raises_exception(self):
     """Checks that receiving no input raises an exception."""
-    with self.assertRaisesRegexp(ValueError, "At least one of "):
+    with self.assertRaisesRegex(ValueError, "At least one of "):
       blocks.GlobalBlock(
           global_model_fn=self._global_model_fn,
           use_edges=False,
@@ -1113,7 +1113,7 @@ class GlobalBlockTest(GraphModuleTest):
       self, use_edges, use_nodes, edges_reducer,
       nodes_reducer):
     """Checks that missing a required aggregation argument raises an error."""
-    with self.assertRaisesRegexp(ValueError, "should not be None"):
+    with self.assertRaisesRegex(ValueError, "should not be None"):
       blocks.GlobalBlock(
           global_model_fn=self._global_model_fn,
           use_edges=use_edges,
