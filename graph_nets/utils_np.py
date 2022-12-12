@@ -171,9 +171,9 @@ def networkx_to_data_dict(graph_nx,
   nodes = None
   try:
     number_of_nodes = graph_nx.number_of_nodes()
-  except ValueError:
+  except ValueError as e:
     raise TypeError("Argument `graph_nx` of wrong type {}".format(
-        type(graph_nx)))
+        type(graph_nx))) from e
   if number_of_nodes == 0:
     if node_shape_hint is not None:
       nodes = np.zeros([0] + list(node_shape_hint), dtype=data_type_hint)
@@ -189,11 +189,11 @@ def networkx_to_data_dict(graph_nx,
           raise ValueError(
               "Either all the nodes should have features, or none of them")
         nodes = np.array(nodes_data)
-    except KeyError:
+    except KeyError as e:
       raise KeyError("Missing 'features' field from the graph nodes. "
                      "This could be due to the node having been silently added "
                      "as a consequence of an edge addition when creating the "
-                     "networkx instance")
+                     "networkx instance") from e
 
   edges = None
   number_of_edges = graph_nx.number_of_edges()
@@ -355,9 +355,9 @@ def networkxs_to_graphs_tuple(graph_nxs,
       data_dict = networkx_to_data_dict(graph_nx, node_shape_hint,
                                         edge_shape_hint, data_type_hint)
       data_dicts.append(data_dict)
-  except TypeError:
+  except TypeError as e:
     raise ValueError("Could not convert some elements of `graph_nxs`. "
-                     "Did you pass an iterable of networkx instances?")
+                     "Did you pass an iterable of networkx instances?") from e
 
   return data_dicts_to_graphs_tuple(data_dicts)
 
